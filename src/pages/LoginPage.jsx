@@ -109,7 +109,7 @@ export function LoginPage({ onLogin }) {
                 type="password"
                 value={pin}
                 onChange={(e) => { setPin(e.target.value); setError(null); }}
-                placeholder="รหัสเริ่มต้น: 1234"
+                placeholder="รหัสเริ่มต้น:1234"
                 autoComplete="current-password"
                 className="w-full rounded-xl border border-white/20 bg-white/15 px-3 py-3 text-sm font-semibold text-white outline-none transition placeholder:text-blue-300/50 focus:border-yellow-400 focus:bg-white/20 focus:ring-2 focus:ring-yellow-400/30"
               />
