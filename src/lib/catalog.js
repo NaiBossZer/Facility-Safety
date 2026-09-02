@@ -352,3 +352,36 @@ export function checkIntegrity(catalog) {
 export function resetCatalog() {
   return buildDefaultCatalog();
 }
+// ------------------------------------------------------------
+// SMOKE TEST — ทดสอบความถูกต้องของตรรกะเบื้องต้น
+// ------------------------------------------------------------
+
+export function runCatalogSmokeTest() {
+  console.log("🚀 Starting Catalog Module Smoke Test...");
+  try {
+    let catalog = { categories: [], items: [], buildings: [], vendors: [], budget: { total: 0 } };
+
+    // 1. Test Add Category
+    catalog = addCategory(catalog, { name: "ระบบไฟฟ้า", color: "blue", icon: "bolt" });
+    const catId = catalog.categories[0].id;
+    console.assert(catalog.categories.length === 1, "Add Category Failed");
+
+    // 2. Test Add Item
+    catalog = addItem(catalog, { categoryId: catId, label: "ตรวจสอบเบรกเกอร์", parts: [{ name: "เบรกเกอร์", qty: 1, unitPrice: 500 }] });
+    console.assert(catalog.items.length === 1, "Add Item Failed");
+
+    // 3. Test Selectors
+    const items = getItems(catalog, { categoryId: catId });
+    console.assert(items.length === 1, "Get Items Failed");
+
+    // 4. Test Integrity
+    const issues = checkIntegrity(catalog);
+    console.log("🔍 Integrity Check found issues:", issues);
+
+    console.log("✅ Catalog Module Smoke Test Passed!");
+    return true;
+  } catch (error) {
+    console.error("❌ Catalog Module Smoke Test Failed:", error);
+    return false;
+  }
+}
