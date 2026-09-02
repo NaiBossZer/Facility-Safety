@@ -17,12 +17,12 @@ export function ensureCatalogStructure(catalog) {
   return {
     ...defaults,
     ...catalog,
-    categories: Array.isArray(catalog.categories) && catalog.categories.length > 0 ? catalog.categories : defaults.categories,
-    items: Array.isArray(catalog.items) && catalog.items.length > 0 ? catalog.items : defaults.items,
-    buildings: Array.isArray(catalog.buildings) && catalog.buildings.length > 0 ? catalog.buildings : defaults.buildings,
-    vendors: Array.isArray(catalog.vendors) && catalog.vendors.length > 0 ? catalog.vendors : defaults.vendors,
+    categories: Array.isArray(catalog.categories) ? catalog.categories : defaults.categories,
+    items: Array.isArray(catalog.items) ? catalog.items : defaults.items,
+    buildings: Array.isArray(catalog.buildings) ? catalog.buildings : defaults.buildings,
+    vendors: Array.isArray(catalog.vendors) ? catalog.vendors : defaults.vendors,
     budget: catalog.budget && typeof catalog.budget === "object" ? { ...defaults.budget, ...catalog.budget } : defaults.budget,
-    personnel: Array.isArray(catalog.personnel) && catalog.personnel.length > 0 ? catalog.personnel : defaults.personnel,
+    personnel: Array.isArray(catalog.personnel) ? catalog.personnel : defaults.personnel,
   };
 }
 

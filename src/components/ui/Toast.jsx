@@ -13,8 +13,9 @@ const MAP = {
   info:    { bg: "bg-indigo-600",  Icon: Bell },
 };
 
-function ToastItem({ id, type, message, onClose }) {
+function ToastItem({ id, type, title, message, msg, onClose }) {
   const { bg, Icon } = MAP[type] ?? MAP.info;
+  const body = message ?? msg;
   return (
     <div
       className={cx(
@@ -25,7 +26,7 @@ function ToastItem({ id, type, message, onClose }) {
       <Icon className="mt-0.5 h-5 w-5 shrink-0" />
       <div className="text-sm leading-relaxed">
         {title && <p className="font-bold">{title}</p>}
-        {message && <p className="text-white/85">{message}</p>}
+        {body && <p className="text-white/85">{body}</p>}
       </div>
       <button
         onClick={() => onClose(id)}

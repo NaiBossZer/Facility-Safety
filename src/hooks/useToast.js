@@ -17,11 +17,24 @@ export function useToast(defaultDuration = 3000) {
   }, []);
 
   const push = useCallback(
-    (message, type = "success", duration = defaultDuration) => {
+    (payload, type = "success", duration = defaultDuration) => {
       const id = uid("toast");
-      setToasts((list) => [...list, { id, message, type, createdAt: Date.now() }]);
-      if (duration > 0) {
-        timers.current[id] = setTimeout(() => dismiss(id), duration);
+      let entry;
+      if (typeof payload === "object" && payload !== null) {
+        entry = {
+          id,
+          type: payload.type ?? type,
+          title: payload.title ?? null,
+          message: payload.message ?? payload.msg ?? null,
+          createdAt: Date.now(),
+        };
+      } else {
+        entry = { id, type, title: null, message: payload, createdAt: Date.now() };
+      }
+      setToasts((list) => [...list, entry]);
+      const dur = typeof payload === "object" && payload.duration != null ? payload.duration : duration;
+      if (dur > 0) {
+        timers.current[id] = setTimeout(() => dismiss(id), dur);
       }
       return id;
     },
