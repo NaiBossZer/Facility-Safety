@@ -66,8 +66,9 @@ export function nowISO() {
   return new Date().toISOString();
 }
 
-/** deep clone แบบปลอดภัย (รองรับเบราว์เซอร์เก่า) */
+/** deep clone แบบปลอดภัย (รองรับเบราว์เซอร์เก่าและวัตถุที่มี undefined) */
 export function clone(obj) {
+  if (obj === null || obj === undefined) return obj;
   if (typeof structuredClone === "function") {
     try {
       return structuredClone(obj);
@@ -75,7 +76,15 @@ export function clone(obj) {
       /* fallthrough */
     }
   }
-  return JSON.parse(JSON.stringify(obj));
+  try {
+    const json = JSON.stringify(obj);
+    if (!json) return obj;
+    return JSON.parse(json);
+  } catch (err) {
+    if (Array.isArray(obj)) return [...obj];
+    if (typeof obj === "object") return { ...obj };
+    return obj;
+  }
 }
 
 /** หน่วงการเรียกฟังก์ชัน พร้อม .flush() และ .cancel() */

@@ -35,35 +35,45 @@ export function CatalogManager() {
 
   // Category Actions
   const handleSaveCat = () => {
-    if (!editingCat.name.trim()) {
-      toast.error("กรุณากรอกชื่อหมวด");
-      return;
+    try {
+      if (!editingCat?.name?.trim()) {
+        toast.error("กรุณากรอกชื่อหมวด");
+        return;
+      }
+      if (editingCat.id) {
+        cat.updateCategory(editingCat.id, editingCat);
+        toast.success("อัปเดตข้อมูลหมวดเรียบร้อย");
+      } else {
+        cat.addCategory(editingCat);
+        toast.success("เพิ่มหมวดการตรวจใหม่เรียบร้อย");
+      }
+      setEditingCat(null);
+    } catch (err) {
+      console.error("[CatalogManager] handleSaveCat ล้มเหลว:", err);
+      toast.error("เกิดข้อผิดพลาดในการบันทึกหมวด");
     }
-    if (editingCat.id) {
-      cat.updateCategory(editingCat.id, editingCat);
-      toast.success("อัปเดตข้อมูลหมวดเรียบร้อย");
-    } else {
-      cat.addCategory(editingCat);
-      toast.success("เพิ่มหมวดการตรวจใหม่เรียบร้อย");
-    }
-    setEditingCat(null);
   };
 
   // Item Actions
   const handleSaveItem = () => {
-    if (!editingItem.label.trim()) {
-      toast.error("กรุณากรอกชื่อรายการตรวจ");
-      return;
+    try {
+      if (!editingItem?.label?.trim()) {
+        toast.error("กรุณากรอกชื่อรายการตรวจ");
+        return;
+      }
+      if (editingItem.id) {
+        cat.updateItem(editingItem.id, editingItem);
+        toast.success("อัปเดตรายการตรวจเรียบร้อย");
+      } else {
+        cat.addItem({ ...editingItem, categoryId: selectedCatId });
+        toast.success("เพิ่มรายการตรวจเรียบร้อย");
+      }
+      setShowItemDrawer(false);
+      setEditingItem(null);
+    } catch (err) {
+      console.error("[CatalogManager] handleSaveItem ล้มเหลว:", err);
+      toast.error("เกิดข้อผิดพลาดในการบันทึกรายการตรวจ");
     }
-    if (editingItem.id) {
-      cat.updateItem(editingItem.id, editingItem);
-      toast.success("อัปเดตรายการตรวจเรียบร้อย");
-    } else {
-      cat.addItem({ ...editingItem, categoryId: selectedCatId });
-      toast.success("เพิ่มรายการตรวจเรียบร้อย");
-    }
-    setShowItemDrawer(false);
-    setEditingItem(null);
   };
 
   const handleAddPart = () => {

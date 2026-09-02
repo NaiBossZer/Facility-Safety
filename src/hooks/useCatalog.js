@@ -40,7 +40,8 @@ export function useCatalog(catalog, setCatalog, deps = {}) {
   );
 
   // ---------- ACTIONS ----------
-  const wrap = (fn) => (...args) => setCatalog((prev) => fn(prev, ...args));
+  const wrap = (fn) => (...args) =>
+    setCatalog((prev) => C.ensureCatalogStructure(fn(C.ensureCatalogStructure(prev), ...args)));
 
   const actions = useMemo(
     () => ({
@@ -67,10 +68,13 @@ export function useCatalog(catalog, setCatalog, deps = {}) {
       // budget
       updateBudget: wrap(C.updateBudget),
       // personnel — unified storage กับ useAuth
-      setPersonnel: (list) => setCatalog((prev) => ({ ...prev, personnel: list })),
+      setPersonnel: (list) =>
+        setCatalog((prev) =>
+          C.ensureCatalogStructure({ ...C.ensureCatalogStructure(prev), personnel: list })
+        ),
       // reset
       resetCatalog: () => setCatalog(C.resetCatalog()),
-      replaceCatalog: (next) => setCatalog(next),
+      replaceCatalog: (next) => setCatalog(C.ensureCatalogStructure(next)),
     }),
     [setCatalog]
   );
