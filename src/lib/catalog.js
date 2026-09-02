@@ -271,15 +271,16 @@ export function duplicateItem(catalog, itemId) {
 // ------------------------------------------------------------
 
 function genericAdd(catalog, listKey, prefix, draft) {
-  const next = clone(catalog);
-  const maxOrder = Math.max(0, ...(next[listKey] || []).map((x) => x.order || 0));
-  next[listKey] = [...(next[listKey] || []), { ...draft, id: uid(prefix), order: maxOrder + 1, active: true }];
+  const next = clone(catalog) || {};
+  const list = next[listKey] || [];
+  const maxOrder = Math.max(0, ...list.map((x) => x?.order || 0));
+  next[listKey] = [...list, { ...draft, id: uid(prefix), order: maxOrder + 1, active: true }];
   return next;
 }
 
 function genericUpdate(catalog, listKey, id, patch) {
-  const next = clone(catalog);
-  next[listKey] = (next[listKey] || []).map((x) => (x.id === id ? { ...x, ...patch, id } : x));
+  const next = clone(catalog) || {};
+  next[listKey] = (next[listKey] || []).map((x) => (x?.id === id ? { ...x, ...patch, id } : x));
   return next;
 }
 
@@ -295,9 +296,14 @@ export const addVendor      = (c, d) => genericAdd(c, "vendors", "ven", d);
 export const updateVendor   = (c, id, p) => genericUpdate(c, "vendors", id, p);
 export const toggleVendor   = (c, id, a) => genericToggle(c, "vendors", id, a);
 
-export function updateBudget(catalog, patch) {
-  const next = clone(catalog);
-  next.budget = { ...next.budget, ...patch, total: Number(patch.total ?? next.budget.total) || 0 };
+export function updateBudget(catalog, patch = {}) {
+  const next = clone(catalog) || {};
+  const currentBudget = next.budget || { fiscalYear: 2569, total: 2500000 };
+  next.budget = {
+    ...currentBudget,
+    ...patch,
+    total: Number(patch.total ?? currentBudget.total) || 0,
+  };
   return next;
 }
 

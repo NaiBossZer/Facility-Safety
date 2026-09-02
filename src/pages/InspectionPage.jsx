@@ -295,21 +295,31 @@ export function InspectionPage({ currentUser }) {
         const inspectorName = currentUser
           ? `${currentUser.name} (${currentUser.position})`
           : "ไม่ระบุผู้ตรวจ";
-        submitInspection({
+
+        const cleanPhotos = (photos || []).map((p) => ({
+          id: p.id || Date.now(),
+          name: p.name || "photo.jpg",
+          size: p.size || "0.1",
+          url: typeof p === "string" ? p : p?.url || p?.dataUrl || "",
+        }));
+
+        const res = submitInspection({
           buildingId,
           track: activeTrack,
           inspector: inspectorName,
           date: new Date().toISOString().slice(0, 10),
           results,
           notes: note ? { general: note } : {},
-          photos,
+          photos: cleanPhotos,
         });
 
         setResults({});
         setNote("");
         setPhotos([]);
         setSending(false);
-        setPage("workorder");
+        if (res?.workOrder) {
+          setPage("workorder");
+        }
       } catch (err) {
         console.error("[InspectionPage] submitInspection ล้มเหลว:", err);
         toast.error("เกิดข้อผิดพลาดในการบันทึก — กรุณาลองใหม่อีกครั้ง");

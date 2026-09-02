@@ -1,4 +1,4 @@
-﻿// ============================================================
+// ============================================================
 // PersonnelManager.jsx — จัดการข้อมูลคนในองค์กร & ผู้มีหน้าที่รับผิดชอบ
 // บันทึกลง catalog.personnel (unified storage — useAuth อ่านได้ทันที)
 // ============================================================
@@ -43,25 +43,34 @@ export function PersonnelManager() {
   const [syncing, setSyncing]             = useState(false);
 
   /** บันทึกลง catalog.personnel ผ่าน cat API */
-  const savePersonnelList = (list) => cat.setPersonnel(list);
+  const savePersonnelList = (list) => {
+    if (cat?.setPersonnel) {
+      cat.setPersonnel(list);
+    }
+  };
 
   const handleSavePerson = () => {
-    if (!editingPerson.name.trim()) return toast.error("กรุณากรอกชื่อ-นามสกุล");
-    const pinVal = String(editingPerson.pin ?? "1234");
-    if (!/^\d{4,8}$/.test(pinVal)) return toast.error("รหัสพนักงานต้องเป็นตัวเลข 4-8 หลัก");
+    try {
+      if (!editingPerson?.name?.trim()) return toast.error("กรุณากรอกชื่อ-นามสกุล");
+      const pinVal = String(editingPerson.pin ?? "1234");
+      if (!/^\d{4,8}$/.test(pinVal)) return toast.error("รหัสพนักงานต้องเป็นตัวเลข 4-8 หลัก");
 
-    let updated;
-    if (editingPerson.id) {
-      updated = personnel.map((p) => (p.id === editingPerson.id ? { ...editingPerson, pin: pinVal } : p));
-      toast.success("อัปเดตข้อมูลบุคลากรเรียบร้อย");
-    } else {
-      updated = [{ ...editingPerson, pin: pinVal, id: `per_${Date.now()}` }, ...personnel];
-      toast.success("เพิ่มบุคลากรเรียบร้อย");
+      let updated;
+      if (editingPerson.id) {
+        updated = personnel.map((p) => (p.id === editingPerson.id ? { ...editingPerson, pin: pinVal } : p));
+        toast.success("อัปเดตข้อมูลบุคลากรเรียบร้อย");
+      } else {
+        updated = [{ ...editingPerson, pin: pinVal, id: `per_${Date.now()}` }, ...personnel];
+        toast.success("เพิ่มบุคลากรเรียบร้อย");
+      }
+      savePersonnelList(updated);
+      setShowModal(false);
+      setEditingPerson(null);
+      setShowPin(false);
+    } catch (err) {
+      console.error("[PersonnelManager] handleSavePerson ล้มเหลว:", err);
+      toast.error("เกิดข้อผิดพลาดในการบันทึกข้อมูลบุคลากร");
     }
-    savePersonnelList(updated);
-    setShowModal(false);
-    setEditingPerson(null);
-    setShowPin(false);
   };
 
   const handleDelete = (id) => {
@@ -143,7 +152,7 @@ export function PersonnelManager() {
             <div key={p.id} className="flex items-start justify-between rounded-2xl border border-slate-200 bg-slate-50/60 p-4 transition hover:border-indigo-300 hover:bg-white hover:shadow-sm">
               <div className="flex items-start gap-3 min-w-0">
                 <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#002D62] text-xs font-bold text-white">
-                  {p.name.slice(0, 2)}
+                  {(p?.name || "??").slice(0, 2)}
                 </span>
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">

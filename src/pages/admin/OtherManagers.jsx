@@ -16,6 +16,8 @@ import {
   ShieldCheck,
   Save,
   CheckCircle2,
+  Edit2,
+  X,
 } from "lucide-react";
 import { useAppData } from "../../store/AppDataProvider";
 import { Badge } from "../../components/ui/Badge";
@@ -28,6 +30,7 @@ export function BuildingManager() {
   const buildings = cat?.allBuildings || [];
   const [name, setName] = useState("");
   const [detail, setDetail] = useState("");
+  const [editingBuilding, setEditingBuilding] = useState(null);
 
   const handleAdd = () => {
     if (!name.trim()) return toast.error("กรุณากรอกชื่ออาคาร");
@@ -35,6 +38,17 @@ export function BuildingManager() {
     setName("");
     setDetail("");
     toast.success("เพิ่มอาคารเรียบร้อย");
+  };
+
+  const handleSaveEdit = () => {
+    if (!editingBuilding?.name?.trim()) return toast.error("กรุณากรอกชื่ออาคาร");
+    cat.updateBuilding(editingBuilding.id, {
+      name: editingBuilding.name,
+      detail: editingBuilding.detail,
+      code: editingBuilding.code,
+    });
+    setEditingBuilding(null);
+    toast.success("อัปเดตข้อมูลอาคารเรียบร้อย");
   };
 
   return (
@@ -45,17 +59,17 @@ export function BuildingManager() {
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="ชื่ออาคาร เช่น อาคาร 9"
-          className="flex-1 rounded-xl border border-slate-200 p-2.5 text-xs outline-none"
+          className="flex-1 rounded-xl border border-slate-200 p-2.5 text-xs outline-none focus:border-indigo-400"
         />
         <input
           value={detail}
           onChange={(e) => setDetail(e.target.value)}
           placeholder="รายละเอียด เช่น อาคารศูนย์กีฬา"
-          className="flex-1 rounded-xl border border-slate-200 p-2.5 text-xs outline-none"
+          className="flex-1 rounded-xl border border-slate-200 p-2.5 text-xs outline-none focus:border-indigo-400"
         />
         <button
           onClick={handleAdd}
-          className="flex items-center gap-1 rounded-xl bg-indigo-600 px-4 py-2.5 text-xs font-bold text-white"
+          className="flex items-center gap-1 rounded-xl bg-indigo-600 px-4 py-2.5 text-xs font-bold text-white hover:bg-indigo-700 active:scale-95 transition"
         >
           <Plus className="h-4 w-4" /> เพิ่ม
         </button>
@@ -65,18 +79,82 @@ export function BuildingManager() {
         {buildings.map((b) => (
           <div key={b.id} className="flex items-center justify-between py-3">
             <div>
-              <p className="font-bold text-sm text-slate-700">{b.name}</p>
+              <div className="flex items-center gap-2">
+                <p className="font-bold text-sm text-slate-700">{b.name}</p>
+                {b.code && <span className="text-[10px] font-mono bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded">{b.code}</span>}
+              </div>
               <p className="text-xs text-slate-400">{b.detail || "-"}</p>
             </div>
-            <button
-              onClick={() => cat.toggleBuilding(b.id, !b.active)}
-              className="text-xs font-bold text-slate-500 hover:text-indigo-600"
-            >
-              {b.active !== false ? "เปิดใช้งาน" : "ปิดใช้งาน"}
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setEditingBuilding({ ...b })}
+                className="flex items-center gap-1 rounded-lg border border-slate-200 px-2.5 py-1 text-xs font-bold text-slate-600 hover:bg-slate-50 hover:text-indigo-600 transition"
+              >
+                <Edit2 className="h-3 w-3" /> แก้ไข
+              </button>
+              <button
+                onClick={() => cat.toggleBuilding(b.id, !b.active)}
+                className={`text-xs font-bold px-2 py-1 rounded-lg ${b.active !== false ? "text-emerald-700 bg-emerald-50" : "text-slate-400 bg-slate-100"}`}
+              >
+                {b.active !== false ? "เปิดใช้งาน" : "ปิดใช้งาน"}
+              </button>
+            </div>
           </div>
         ))}
       </div>
+
+      {/* Edit Building Modal */}
+      {editingBuilding && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm animate-fade">
+          <div className="w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b pb-3">
+              <h4 className="font-extrabold text-slate-800 text-sm flex items-center gap-2">
+                <Building2 className="h-4 w-4 text-indigo-600" /> แก้ไขข้อมูลอาคาร
+              </h4>
+              <button onClick={() => setEditingBuilding(null)} className="rounded-lg p-1 text-slate-400 hover:bg-slate-100">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs">
+              <label className="block">
+                <span className="font-bold text-slate-700">ชื่ออาคาร</span>
+                <input
+                  value={editingBuilding.name || ""}
+                  onChange={(e) => setEditingBuilding({ ...editingBuilding, name: e.target.value })}
+                  className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 outline-none focus:border-indigo-500 font-bold text-slate-800"
+                />
+              </label>
+              <label className="block">
+                <span className="font-bold text-slate-700">รหัสย่ออาคาร</span>
+                <input
+                  value={editingBuilding.code || ""}
+                  onChange={(e) => setEditingBuilding({ ...editingBuilding, code: e.target.value })}
+                  placeholder="เช่น BLD-01"
+                  className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 outline-none focus:border-indigo-500 font-mono"
+                />
+              </label>
+              <label className="block">
+                <span className="font-bold text-slate-700">รายละเอียด</span>
+                <input
+                  value={editingBuilding.detail || ""}
+                  onChange={(e) => setEditingBuilding({ ...editingBuilding, detail: e.target.value })}
+                  className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 outline-none focus:border-indigo-500"
+                />
+              </label>
+            </div>
+
+            <div className="flex justify-end gap-2 border-t pt-3">
+              <button onClick={() => setEditingBuilding(null)} className="rounded-xl px-4 py-2 text-xs font-bold text-slate-500 hover:bg-slate-100">
+                ยกเลิก
+              </button>
+              <button onClick={handleSaveEdit} className="flex items-center gap-1 rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold text-white shadow hover:bg-indigo-700">
+                <Save className="h-3.5 w-3.5" /> บันทึก
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -88,6 +166,7 @@ export function VendorManager() {
   const [name, setName] = useState("");
   const [tax, setTax] = useState("");
   const [tel, setTel] = useState("");
+  const [editingVendor, setEditingVendor] = useState(null);
 
   const handleAdd = () => {
     if (!name.trim()) return toast.error("กรุณากรอกชื่อร้านค้า");
@@ -98,6 +177,17 @@ export function VendorManager() {
     toast.success("เพิ่มร้านค้าเรียบร้อย");
   };
 
+  const handleSaveEdit = () => {
+    if (!editingVendor?.name?.trim()) return toast.error("กรุณากรอกชื่อร้านค้า");
+    cat.updateVendor(editingVendor.id, {
+      name: editingVendor.name,
+      tax: editingVendor.tax,
+      tel: editingVendor.tel,
+    });
+    setEditingVendor(null);
+    toast.success("อัปเดตข้อมูลร้านค้าเรียบร้อย");
+  };
+
   return (
     <div className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
       <h3 className="font-extrabold text-slate-800">จัดการข้อมูลร้านค้า/ผู้ขาย</h3>
@@ -106,24 +196,24 @@ export function VendorManager() {
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="ชื่อร้านค้า/บริษัท"
-          className="rounded-xl border border-slate-200 p-2.5 text-xs outline-none"
+          className="rounded-xl border border-slate-200 p-2.5 text-xs outline-none focus:border-indigo-400"
         />
         <input
           value={tax}
           onChange={(e) => setTax(e.target.value)}
           placeholder="เลขประจำตัวผู้เสียภาษี"
-          className="rounded-xl border border-slate-200 p-2.5 text-xs outline-none"
+          className="rounded-xl border border-slate-200 p-2.5 text-xs outline-none focus:border-indigo-400"
         />
         <div className="flex gap-2">
           <input
             value={tel}
             onChange={(e) => setTel(e.target.value)}
             placeholder="เบอร์โทรศัพท์"
-            className="flex-1 rounded-xl border border-slate-200 p-2.5 text-xs outline-none"
+            className="flex-1 rounded-xl border border-slate-200 p-2.5 text-xs outline-none focus:border-indigo-400"
           />
           <button
             onClick={handleAdd}
-            className="flex items-center gap-1 rounded-xl bg-indigo-600 px-4 py-2.5 text-xs font-bold text-white"
+            className="flex items-center gap-1 rounded-xl bg-indigo-600 px-4 py-2.5 text-xs font-bold text-white hover:bg-indigo-700 active:scale-95 transition"
           >
             <Plus className="h-4 w-4" /> เพิ่ม
           </button>
@@ -139,15 +229,77 @@ export function VendorManager() {
                 เลขภาษี: {v.tax || "-"} · โทร: {v.tel || "-"}
               </p>
             </div>
-            <button
-              onClick={() => cat.toggleVendor(v.id, !v.active)}
-              className="text-xs font-bold text-slate-500 hover:text-indigo-600"
-            >
-              {v.active !== false ? "เปิดใช้งาน" : "ปิดใช้งาน"}
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setEditingVendor({ ...v })}
+                className="flex items-center gap-1 rounded-lg border border-slate-200 px-2.5 py-1 text-xs font-bold text-slate-600 hover:bg-slate-50 hover:text-indigo-600 transition"
+              >
+                <Edit2 className="h-3 w-3" /> แก้ไข
+              </button>
+              <button
+                onClick={() => cat.toggleVendor(v.id, !v.active)}
+                className={`text-xs font-bold px-2 py-1 rounded-lg ${v.active !== false ? "text-emerald-700 bg-emerald-50" : "text-slate-400 bg-slate-100"}`}
+              >
+                {v.active !== false ? "เปิดใช้งาน" : "ปิดใช้งาน"}
+              </button>
+            </div>
           </div>
         ))}
       </div>
+
+      {/* Edit Vendor Modal */}
+      {editingVendor && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm animate-fade">
+          <div className="w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b pb-3">
+              <h4 className="font-extrabold text-slate-800 text-sm flex items-center gap-2">
+                <Store className="h-4 w-4 text-indigo-600" /> แก้ไขข้อมูลร้านค้า/ผู้ขาย
+              </h4>
+              <button onClick={() => setEditingVendor(null)} className="rounded-lg p-1 text-slate-400 hover:bg-slate-100">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs">
+              <label className="block">
+                <span className="font-bold text-slate-700">ชื่อร้านค้า/บริษัท</span>
+                <input
+                  value={editingVendor.name || ""}
+                  onChange={(e) => setEditingVendor({ ...editingVendor, name: e.target.value })}
+                  className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 outline-none focus:border-indigo-500 font-bold text-slate-800"
+                />
+              </label>
+              <label className="block">
+                <span className="font-bold text-slate-700">เลขประจำตัวผู้เสียภาษี</span>
+                <input
+                  value={editingVendor.tax || ""}
+                  onChange={(e) => setEditingVendor({ ...editingVendor, tax: e.target.value })}
+                  placeholder="เช่น 0105542001234"
+                  className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 outline-none focus:border-indigo-500 font-mono"
+                />
+              </label>
+              <label className="block">
+                <span className="font-bold text-slate-700">เบอร์โทรศัพท์</span>
+                <input
+                  value={editingVendor.tel || ""}
+                  onChange={(e) => setEditingVendor({ ...editingVendor, tel: e.target.value })}
+                  placeholder="เช่น 02-591-8800"
+                  className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 outline-none focus:border-indigo-500"
+                />
+              </label>
+            </div>
+
+            <div className="flex justify-end gap-2 border-t pt-3">
+              <button onClick={() => setEditingVendor(null)} className="rounded-xl px-4 py-2 text-xs font-bold text-slate-500 hover:bg-slate-100">
+                ยกเลิก
+              </button>
+              <button onClick={handleSaveEdit} className="flex items-center gap-1 rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold text-white shadow hover:bg-indigo-700">
+                <Save className="h-3.5 w-3.5" /> บันทึก
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -158,8 +310,15 @@ export function BudgetManager() {
   const [total, setTotal] = useState(catalog?.budget?.total || 2500000);
 
   const handleSave = () => {
-    cat.updateBudget({ total: Number(total) || 0 });
-    toast.success("บันทึกวงเงินงบประมาณประจำปีเรียบร้อย");
+    try {
+      const numTotal = Number(total) || 0;
+      if (numTotal < 0) return toast.error("วงเงินงบประมาณต้องไม่ติดลบ");
+      cat.updateBudget({ total: numTotal });
+      toast.success("บันทึกวงเงินงบประมาณประจำปีเรียบร้อย");
+    } catch (err) {
+      console.error("[BudgetManager] updateBudget ล้มเหลว:", err);
+      toast.error("เกิดข้อผิดพลาดในการบันทึกงบประมาณ");
+    }
   };
 
   return (
