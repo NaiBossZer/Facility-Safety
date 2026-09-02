@@ -65,7 +65,7 @@ export function LoginPage({ onLogin }) {
             <ShieldCheck className="h-10 w-10 text-[#002D62]" />
           </div>
           <h1 className="text-2xl font-extrabold text-white">ระบบบริหารจัดการ</h1>
-          <p className="mt-1 text-sm text-blue-200">ความปลอดภัยอาคารสถานที่ · มหาวิทยาลัยมหิดล วิทยาเขตลำปาง</p>
+          <p className="mt-1 text-sm text-blue-200">ความปลอดภัยอาคารสถานที่ · งานพันธกิจเพื่อสังคม คณะสิ่งแวดล้อมและทรัพยากรณศาสตร์ มหาวิทยาลัยมหิดล</p>
         </div>
 
         {/* Login Card */}
