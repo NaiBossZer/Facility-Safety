@@ -7,21 +7,28 @@ import { ShieldCheck, LogIn, AlertCircle, Lock, User } from "lucide-react";
 import { useAppData } from "../store/AppDataProvider";
 import { cx } from "../lib/helpers";
 
+// Fallback ใช้เมื่อ catalog ยังไม่มี personnel
+const FALLBACK_PERSONNEL = [
+  { id: "per_1", name: "นายสมชาย ตรวจดี",        position: "เจ้าหน้าที่ตรวจสอบอาคารและความปลอดภัย", department: "งานอาคารสถานที่และยานพาหนะ", role: "inspector",    pin: "1234" },
+  { id: "per_2", name: "นายประเสริฐ มั่นคงชัย",   position: "หัวหน้างานอาคารสถานที่และความปลอดภัย", department: "งานอาคารสถานที่และยานพาหนะ", role: "section_head", pin: "1234" },
+  { id: "per_3", name: "ผศ.ดร. นิทัศน์ สมานพงษ์", position: "รองคณบดีฝ่ายบริหารและพันธกิจเพื่อสังคม", department: "สำนักงานคณบดี",             role: "deputy_dean",  pin: "1234" },
+];
+
+const ROLE_LABEL = {
+  inspector:    "เจ้าหน้าที่ตรวจสอบ",
+  section_head: "หัวหน้างาน",
+  deputy_dean:  "รองคณบดี",
+  dean:         "คณบดี",
+  finance_head: "หัวหน้าการเงิน",
+};
+
 export function LoginPage({ onLogin }) {
   const { catalog } = useAppData();
 
-  // ดึง personnel list จาก catalog (Admin เพิ่มได้ใน PersonnelManager)
+  // ดึง personnel list จาก context โดยตรง (มีข้อมูลแน่นอน ไม่ต้องรอ localStorage flush)
   const personnel = useMemo(() => {
     const list = catalog?.personnel ?? [];
-    // ถ้ายังไม่มีข้อมูล ให้ใช้ fallback เพื่อป้องกันหน้าว่าง
-    if (list.length === 0) {
-      return [
-        { id: "per_1", name: "นายสมชาย ตรวจดี", position: "เจ้าหน้าที่ตรวจสอบอาคารและความปลอดภัย", department: "งานอาคารสถานที่และยานพาหนะ", role: "inspector" },
-        { id: "per_2", name: "นายประเสริฐ มั่นคงชัย", position: "หัวหน้างานอาคารสถานที่และความปลอดภัย", department: "งานอาคารสถานที่และยานพาหนะ", role: "section_head" },
-        { id: "per_3", name: "ผศ.ดร. นิทัศน์ สมานพงษ์", position: "รองคณบดีฝ่ายบริหารและพันธกิจเพื่อสังคม", department: "สำนักงานคณบดี", role: "deputy_dean" },
-      ];
-    }
-    return list;
+    return list.length > 0 ? list : FALLBACK_PERSONNEL;
   }, [catalog]);
 
   const [selectedId, setSelectedId] = useState("");
@@ -35,11 +42,12 @@ export function LoginPage({ onLogin }) {
     e.preventDefault();
     setError(null);
     if (!selectedId) { setError("กรุณาเลือกชื่อบุคลากร"); return; }
-    if (!pin) { setError("กรุณากรอกรหัสพนักงาน"); return; }
+    if (!pin)        { setError("กรุณากรอกรหัสพนักงาน");  return; }
+
     setBusy(true);
-    // รอเล็กน้อยเพื่อ UX
     setTimeout(() => {
-      const result = onLogin(selectedId, pin);
+      // ส่ง personnelList จาก context ให้ useAuth.login โดยตรง
+      const result = onLogin(selectedId, pin, personnel);
       setBusy(false);
       if (!result.ok) {
         setError(result.error);
@@ -48,24 +56,17 @@ export function LoginPage({ onLogin }) {
     }, 400);
   };
 
-  const ROLE_LABEL = {
-    inspector: "เจ้าหน้าที่ตรวจสอบ",
-    section_head: "หัวหน้างาน",
-    deputy_dean: "รองคณบดี",
-    dean: "คณบดี",
-    finance_head: "หัวหน้าการเงิน",
-  };
-
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-[#002D62] via-[#004499] to-[#001a3e] p-4">
       <div className="w-full max-w-md">
+
         {/* Logo & Title */}
         <div className="mb-8 text-center">
           <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-3xl bg-[#F2A900] shadow-2xl shadow-yellow-900/40">
             <ShieldCheck className="h-10 w-10 text-[#002D62]" />
           </div>
           <h1 className="text-2xl font-extrabold text-white">ระบบบริหารจัดการ</h1>
-          <p className="mt-1 text-sm text-blue-200">ความปลอดภัยอาคารสถานที่ · งานพันธกิจเพื่อสังคม คณะสิ่งแวดล้อมและทรัพยากรณศาสตร์ มหาวิทยาลัยมหิดล</p>
+          <p className="mt-1 text-sm text-blue-200">ความปลอดภัยอาคารสถานที่ · มหาวิทยาลัยมหิดล วิทยาเขตลำปาง</p>
         </div>
 
         {/* Login Card */}
@@ -73,6 +74,7 @@ export function LoginPage({ onLogin }) {
           <h2 className="mb-6 text-center text-lg font-extrabold text-white">เข้าสู่ระบบ</h2>
 
           <form onSubmit={handleSubmit} className="space-y-4">
+
             {/* เลือกบุคลากร */}
             <div>
               <label className="mb-1.5 flex items-center gap-1.5 text-xs font-bold text-blue-100">
@@ -109,13 +111,13 @@ export function LoginPage({ onLogin }) {
                 type="password"
                 value={pin}
                 onChange={(e) => { setPin(e.target.value); setError(null); }}
-                placeholder="รหัสเริ่มต้น:1234"
+                placeholder="รหัสเริ่มต้น: 1234"
                 autoComplete="current-password"
                 className="w-full rounded-xl border border-white/20 bg-white/15 px-3 py-3 text-sm font-semibold text-white outline-none transition placeholder:text-blue-300/50 focus:border-yellow-400 focus:bg-white/20 focus:ring-2 focus:ring-yellow-400/30"
               />
             </div>
 
-            {/* Error */}
+            {/* Error message */}
             {error && (
               <div className="flex items-center gap-2 rounded-xl border border-red-300/30 bg-red-500/20 px-3 py-2.5 text-xs font-semibold text-red-200">
                 <AlertCircle className="h-4 w-4 shrink-0" />

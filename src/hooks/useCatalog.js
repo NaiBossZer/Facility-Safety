@@ -66,6 +66,8 @@ export function useCatalog(catalog, setCatalog, deps = {}) {
       toggleVendor: wrap(C.toggleVendor),
       // budget
       updateBudget: wrap(C.updateBudget),
+      // personnel — unified storage กับ useAuth
+      setPersonnel: (list) => setCatalog((prev) => ({ ...prev, personnel: list })),
       // reset
       resetCatalog: () => setCatalog(C.resetCatalog()),
       replaceCatalog: (next) => setCatalog(next),

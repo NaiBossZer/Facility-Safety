@@ -3,7 +3,7 @@
 // เหมือน useAdminAuth แต่สำหรับ user ทั่วไปเข้าแอป
 // ============================================================
 import { useState, useCallback } from "react";
-import { KEYS, readJSON, writeJSON, removeKey } from "../lib/storage";
+import { writeJSON, removeKey } from "../lib/storage";
 
 const AUTH_USER_KEY = "fsa:v2:userSession";
 const SESSION_MINUTES = 480; // 8 ชั่วโมง (วันทำงาน)
@@ -11,10 +11,12 @@ const SESSION_MINUTES = 480; // 8 ชั่วโมง (วันทำงา�
 /** โหลด session ที่ยัง valid */
 function loadSession() {
   try {
-    const s = readJSON(AUTH_USER_KEY, null);
-    if (!s || !s.expiresAt) return null;
+    const raw = window.localStorage?.getItem(AUTH_USER_KEY);
+    if (!raw) return null;
+    const s = JSON.parse(raw);
+    if (!s?.expiresAt) return null;
     if (Date.now() > s.expiresAt) {
-      removeKey(AUTH_USER_KEY);
+      window.localStorage.removeItem(AUTH_USER_KEY);
       return null;
     }
     return s;
@@ -30,17 +32,14 @@ export function useAuth() {
   const currentUser = session?.user ?? null;
 
   /**
-   * login — ตรวจ personnel list จาก localStorage (catalog)
-   * รหัสเริ่มต้นทุกคน = "1234" หรือรหัสที่ admin กำหนด (เก็บใน personnel.pin)
+   * login(personnelId, pin, personnelList)
+   * personnelList มาจาก useAppData().catalog.personnel โดยตรง
+   * ไม่อ่านจาก localStorage เพื่อป้องกันปัญหา catalog ยังไม่ถูก flush
    */
-  const login = useCallback((personnelId, pin) => {
+  const login = useCallback((personnelId, pin, personnelList = []) => {
     if (!personnelId || !pin) {
       return { ok: false, error: "กรุณากรอกข้อมูลให้ครบ" };
     }
-
-    // อ่าน personnel list จาก catalog (localStorage)
-    const catalog = readJSON(KEYS.catalog, null);
-    const personnelList = catalog?.personnel ?? [];
 
     const person = personnelList.find((p) => p.id === personnelId);
     if (!person) {
