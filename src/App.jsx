@@ -1,21 +1,80 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+// ============================================================
+// App.jsx — Modular Application Shell Root
+// ============================================================
+import React, { useState } from "react";
+import { useAppData } from "./store/AppDataProvider";
+import { Sidebar } from "./components/layout/Sidebar";
 import { Header } from "./components/layout/Header";
-import { AppDataProvider } from "./store/AppDataProvider";
-import { Dashboard } from "./pages/Dashboard"; // สมมติว่าสร้างไฟล์หน้าเพจไว้แล้ว
-import { Reports } from "./pages/Reports";
+import { BottomNav } from "./components/layout/BottomNav";
+import { Toast } from "./components/ui/Toast";
+
+import { DashboardPage } from "./pages/DashboardPage";
+import { InspectionPage } from "./pages/InspectionPage";
+import { WorkOrderPage } from "./pages/WorkOrderPage";
+import { ProcurementPage } from "./pages/ProcurementPage";
+import { ReportsPage } from "./pages/ReportsPage";
+import { AdminPage } from "./pages/admin/AdminPage";
 
 export default function App() {
+  const { page, setPage } = useAppData();
+  const [menuOpen, setMenuOpen] = useState(false);
+
   return (
-    <AppDataProvider>
-      <Router>
-        <Header />
-        <main className="p-4">
-          <Routes>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/reports" element={<Reports />} />
-          </Routes>
+    <div className="min-h-screen bg-slate-50 font-sans text-slate-800 antialiased">
+      {/* Global CSS for Print & Animation */}
+      <style>{`
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(10px); }
+          to { opacity: 1; transform: none; }
+        }
+        .animate-fade {
+          animation: fadeIn 0.35s cubic-bezier(0.2, 0.7, 0.3, 1) both;
+        }
+        @media print {
+          body * {
+            visibility: hidden !important;
+          }
+          #print-area, #print-area * {
+            visibility: visible !important;
+          }
+          #print-area {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            border: none !important;
+            box-shadow: none !important;
+            padding: 0 !important;
+          }
+          .no-print {
+            display: none !important;
+          }
+        }
+      `}</style>
+
+      {/* Sidebar Navigation (Desktop & Mobile Drawer) */}
+      <Sidebar menuOpen={menuOpen} setMenuOpen={setMenuOpen} />
+
+      {/* Main Content Area */}
+      <div className="lg:pl-64">
+        {/* Header Bar */}
+        <Header setMenuOpen={setMenuOpen} />
+
+        {/* Page Views Router */}
+        <main className="px-4 pb-28 pt-5 sm:px-6 lg:pb-10">
+          {page === "dashboard" && <DashboardPage />}
+          {page === "inspection" && <InspectionPage />}
+          {page === "workorder" && <WorkOrderPage />}
+          {page === "procurement" && <ProcurementPage />}
+          {page === "reports" && <ReportsPage />}
+          {page === "admin" && <AdminPage onExit={() => setPage("dashboard")} />}
         </main>
-      </Router>
-    </AppDataProvider>
+      </div>
+
+      {/* Mobile Bottom Navigation */}
+      <BottomNav />
+
+      {/* Toast Notification Container */}
+      <Toast />
+    </div>
   );
 }

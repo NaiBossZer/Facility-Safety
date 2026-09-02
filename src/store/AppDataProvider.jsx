@@ -19,7 +19,6 @@ const MIGRATION_RESULT = runMigrations();
 
 export function AppDataProvider({ children }) {
   const { toasts, toast, dismiss } = useToast();
-
   const handleStorageError = useCallback(
     (type) => {
       if (type === "quota") toast.error("พื้นที่จัดเก็บเต็ม — กรุณา Export ข้อมูลแล้วล้างงานเก่า");
@@ -31,7 +30,11 @@ export function AppDataProvider({ children }) {
   const opts = { onError: handleStorageError };
 
   const [catalog, setCatalog, catalogMeta]   = usePersistentState(KEYS.catalog, buildDefaultCatalog, opts);
-  const [workOrders, setWorkOrders]          = usePersistentState(KEYS.workOrders, [], opts);
+ const [workOrders, setWorkOrders] = usePersistentState(KEYS.workOrders, [
+  { id: 'WO-001', description: 'ตรวจสอบระบบดับเพลิง', status: 'pending', createdAt: nowISO() },
+  { id: 'WO-002', description: 'ซ่อมแซมประตูทางออกฉุกเฉิน', status: 'in-progress', createdAt: nowISO() }
+], opts);
+
   const [inspections, setInspections]        = usePersistentState(KEYS.inspections, [], opts);
   const [ui, setUi]                          = usePersistentState(KEYS.ui, { page: "dashboard", procureWO: null }, opts);
   const [meta, setMeta]                      = usePersistentState(KEYS.meta, { schemaVersion: 2, woCounter: 0, lastSavedAt: null }, opts);
