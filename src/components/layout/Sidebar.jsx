@@ -11,6 +11,8 @@ import {
   ShieldAlert,
   AlertTriangle,
   X,
+  LogOut,
+  User,
 } from "lucide-react";
 import { useAppData } from "../../store/AppDataProvider";
 import { cx } from "../../lib/helpers";
@@ -24,7 +26,7 @@ export const NAV_ITEMS = [
   { id: "admin",       name: "Admin Console",        desc: "จัดการระบบ & แคตตาล็อก", icon: ShieldAlert },
 ];
 
-export function Sidebar({ menuOpen, setMenuOpen }) {
+export function Sidebar({ menuOpen, setMenuOpen, currentUser, onLogout }) {
   const { page, setPage, workOrders, stats } = useAppData();
 
   const urgentCount = stats?.urgent ?? workOrders.filter((w) => w.priority === "urgent" && w.status < 6).length;

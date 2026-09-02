@@ -2,12 +2,12 @@
 // Header.jsx — Top App Bar with mobile menu toggle & user profile
 // ============================================================
 import React from "react";
-import { Menu, Bell } from "lucide-react";
+import { Menu, Bell, LogOut, User } from "lucide-react";
 import { useAppData } from "../../store/AppDataProvider";
 import { NAV_ITEMS } from "./Sidebar";
 import { thDate } from "../../lib/helpers";
 
-export function Header({ setMenuOpen }) {
+export function Header({ setMenuOpen, currentUser, onLogout }) {
   const { page, setPage, workOrders, stats } = useAppData();
 
   const currentNav = NAV_ITEMS.find((n) => n.id === page) || NAV_ITEMS[0];
@@ -19,6 +19,10 @@ export function Header({ setMenuOpen }) {
     month: "long",
     year: "numeric",
   });
+
+  const userName = currentUser?.name || "ผู้ใช้งานระบบ";
+  const userPos = currentUser?.position || "บุคลากร";
+  const initials = userName.slice(0, 2);
 
   return (
     <header className="no-print sticky top-0 z-30 border-b border-slate-200 bg-white/85 backdrop-blur-md">
@@ -42,7 +46,7 @@ export function Header({ setMenuOpen }) {
           </div>
         </div>
 
-        {/* Right: Notification bell & User pill */}
+        {/* Right: Notification bell & User Profile */}
         <div className="flex shrink-0 items-center gap-2">
           <button
             onClick={() => setPage("workorder")}
@@ -57,14 +61,24 @@ export function Header({ setMenuOpen }) {
             )}
           </button>
 
-          <div className="hidden items-center gap-2.5 rounded-xl border border-slate-200 py-1.5 pl-1.5 pr-3 sm:flex">
-            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-indigo-700 text-xs font-bold text-white">
-              สช
+          {/* Logged in User Pill */}
+          <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 py-1 pl-1.5 pr-2 sm:py-1.5 sm:pr-3">
+            <span className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-lg bg-[#002D62] text-xs font-bold text-white shadow-sm">
+              {initials}
             </span>
-            <div className="leading-tight">
-              <p className="text-xs font-bold text-slate-700">สมชาย ตรวจดี</p>
-              <p className="text-[10px] text-slate-400">เจ้าหน้าที่ตรวจอาคาร</p>
+            <div className="hidden sm:block leading-tight min-w-0">
+              <p className="truncate text-xs font-bold text-slate-800">{userName}</p>
+              <p className="truncate text-[10px] text-slate-500">{userPos}</p>
             </div>
+            {onLogout && (
+              <button
+                onClick={onLogout}
+                className="ml-1 rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600 transition"
+                title="ออกจากระบบ"
+              >
+                <LogOut className="h-4 w-4" />
+              </button>
+            )}
           </div>
         </div>
       </div>
