@@ -10,6 +10,7 @@ import {
   CircleDollarSign,
   Settings,
   Lock,
+  Users,
 } from "lucide-react";
 import { useAdminAuth } from "../../hooks/useAdminAuth";
 import { PinGate } from "../../components/admin/PinGate";
