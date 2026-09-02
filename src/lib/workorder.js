@@ -57,6 +57,7 @@ export function createWorkOrderFromInspection(inspection, catalog, opts = {}) {
     createdAt: nowISO(),
     results,
     notes,
+    photos: inspection.photos || [],
     summary: { pass: passIds.length, warn: warnIds.length, fail: failIds.length },
     workOrderId: null,
   };
@@ -93,7 +94,7 @@ export function createWorkOrderFromInspection(inspection, catalog, opts = {}) {
       standard: item.standard || "",
       result: results[id],
       critical: Boolean(item.critical),
-      note: notes[id] || "",
+      note: notes[id] || notes.general || "",
     });
 
     // เอาอะไหล่เฉพาะรายการที่ "ชำรุด" เท่านั้น (เฝ้าระวังยังไม่ต้องซื้อ)
@@ -114,6 +115,7 @@ export function createWorkOrderFromInspection(inspection, catalog, opts = {}) {
     buildingCode: building?.code || "-",
     title: buildTitle(findings),
     reporter: inspection.inspector || "-",
+    reason: notes.general || (findings.length > 0 ? findings.map((f) => f.label).join(", ") : "-"),
     createdAt: nowISO(),
     date: inspection.date || todayISO(),
     status: 1,                                  // 1 = แจ้งซ่อมแล้ว
@@ -122,6 +124,7 @@ export function createWorkOrderFromInspection(inspection, catalog, opts = {}) {
     sourceItemIds: problemIds,
     items: woItems,                             // snapshot อะไหล่+ราคา
     total,
+    photos: inspection.photos || [],
     catalogVersionAt: catalog?.catalogVersion ?? null,
     history: [
       { at: nowISO(), status: 1, by: inspection.inspector || "-", note: "สร้างจากผลการตรวจอาคาร" },

@@ -256,6 +256,58 @@ function WorkOrderCard({ wo, onStatus, onProcure, highlight, buildings, categori
                 </div>
               </div>
 
+              {/* Findings */}
+              {wo.findings && wo.findings.length > 0 && (
+                <div>
+                  <p className="mb-2 text-xs font-bold uppercase tracking-wide text-slate-400">
+                    รายการข้อบกพร่องที่ตรวจพบ ({wo.findings.length} รายการ)
+                  </p>
+                  <div className="space-y-1.5 rounded-xl border border-slate-200 bg-white p-3">
+                    {wo.findings.map((f, i) => (
+                      <div key={i} className="flex items-start justify-between text-xs">
+                        <div>
+                          <p className="font-semibold text-slate-700">{f.label}</p>
+                          <p className="text-[11px] text-slate-400">หมวด: {f.categoryName} {f.standard ? `· เกณฑ์: ${f.standard}` : ""}</p>
+                        </div>
+                        <Badge className={f.result === "fail" ? "bg-red-50 text-red-700 border-red-200" : "bg-amber-50 text-amber-700 border-amber-200"}>
+                          {f.result === "fail" ? "ชำรุด" : "เฝ้าระวัง"}
+                        </Badge>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Photos */}
+              {wo.photos && wo.photos.length > 0 && (
+                <div>
+                  <p className="mb-2 text-xs font-bold uppercase tracking-wide text-slate-400">
+                    รูปถ่ายหลักฐานหน้างาน ({wo.photos.length} รูป)
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {wo.photos.map((p, i) => (
+                      <div key={p.id || i} className="group relative overflow-hidden rounded-xl border border-slate-200 bg-white p-1">
+                        {p.url ? (
+                          <img
+                            src={p.url}
+                            alt={p.name}
+                            className="h-20 w-20 rounded-lg object-cover cursor-pointer hover:opacity-90 transition"
+                            onClick={() => {
+                              const w = window.open("");
+                              if (w) w.document.write(`<img src="${p.url}" style="max-width:100%" />`);
+                            }}
+                          />
+                        ) : (
+                          <div className="flex h-20 w-20 items-center justify-center rounded-lg bg-slate-100 text-xs text-slate-400">
+                            {p.name}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* History / Log */}
               <div>
                 <p className="mb-2 text-xs font-bold uppercase tracking-wide text-slate-400">

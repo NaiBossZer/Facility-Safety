@@ -4,7 +4,7 @@
 // Track 2: ความต่อเนื่องสาธารณูปโภค (Facility Continuity)
 // Real-time Checklist & Content Editor: เพิ่ม/แก้ไข/ปรับเกณฑ์ได้ทันที
 // ============================================================
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import {
   Building2,
   ShieldAlert,
@@ -193,18 +193,71 @@ export function InspectionPage({ currentUser }) {
   const currentCategory = trackCategories.find((c) => c.id === categoryId);
   const CategoryIcon = getIcon(currentCategory?.icon || "Layers");
   const catColor = getColor(currentCategory?.color || "indigo");
+  const fileInputRef = useRef(null);
+
+  // ย่อขนาดรูปภาพผ่าน Canvas (max 800x800, quality 0.7 JPEG) เพื่อไม่ให้ล้น localStorage
+  const compressImage = (file) => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = (e) => {
+        const img = new Image();
+        img.src = e.target.result;
+        img.onload = () => {
+          let width = img.width;
+          let height = img.height;
+          const MAX_WIDTH = 800;
+          const MAX_HEIGHT = 800;
+
+          if (width > MAX_WIDTH || height > MAX_HEIGHT) {
+            if (width > height) {
+              height = Math.round((height * MAX_WIDTH) / width);
+              width = MAX_WIDTH;
+            } else {
+              width = Math.round((width * MAX_HEIGHT) / height);
+              height = MAX_HEIGHT;
+            }
+          }
+
+          const canvas = document.createElement("canvas");
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext("2d");
+          ctx.drawImage(img, 0, 0, width, height);
+          const dataUrl = canvas.toDataURL("image/jpeg", 0.7);
+          resolve(dataUrl);
+        };
+        img.onerror = () => resolve(e.target.result);
+      };
+      reader.onerror = () => resolve(null);
+    });
+  };
+
+  const handleFileSelect = async (e) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+
+    for (const file of files) {
+      if (!file.type.startsWith("image/")) continue;
+      const compressedUrl = await compressImage(file);
+      if (compressedUrl) {
+        setPhotos((prev) => [
+          ...prev,
+          {
+            id: Date.now() + Math.random(),
+            name: file.name,
+            size: (file.size / (1024 * 1024)).toFixed(2),
+            url: compressedUrl,
+          },
+        ]);
+      }
+    }
+    // reset input
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
 
   const addPhoto = () => {
-    const n = photos.length + 1;
-    const bName = currentBuilding?.name || "BLD";
-    setPhotos((p) => [
-      ...p,
-      {
-        id: Date.now() + n,
-        name: `DMG_${bName.replace(/\s+/g, "")}_${String(n).padStart(3, "0")}.jpg`,
-        size: (1.2 + Math.random() * 2.6).toFixed(1),
-      },
-    ]);
+    fileInputRef.current?.click();
   };
 
   const handleSaveItemRealtime = () => {
@@ -249,6 +302,7 @@ export function InspectionPage({ currentUser }) {
           date: new Date().toISOString().slice(0, 10),
           results,
           notes: note ? { general: note } : {},
+          photos,
         });
 
         setResults({});
@@ -715,11 +769,21 @@ export function InspectionPage({ currentUser }) {
           />
 
           <div className="mt-4">
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleFileSelect}
+              accept="image/*"
+              multiple
+              capture="environment"
+              className="hidden"
+            />
             <button
+              type="button"
               onClick={addPhoto}
               className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 py-4 text-sm font-bold text-slate-600 transition hover:border-indigo-400 hover:bg-indigo-50 hover:text-indigo-600 active:scale-[0.99]"
             >
-              <Camera className="h-5 w-5" /> อัปโหลดรูปถ่ายหลักฐานหน้างาน
+              <Camera className="h-5 w-5" /> อัปโหลดรูปถ่ายหลักฐานหน้างาน (จากไฟล์ หรือ กล้อง)
             </button>
 
             {photos.length > 0 && (
@@ -727,18 +791,28 @@ export function InspectionPage({ currentUser }) {
                 {photos.map((p) => (
                   <div
                     key={p.id}
-                    className="group relative overflow-hidden rounded-xl border border-slate-200 bg-gradient-to-br from-slate-100 to-slate-200 p-3"
+                    className="group relative overflow-hidden rounded-xl border border-slate-200 bg-white p-1.5 shadow-sm"
                   >
-                    <div className="flex items-center gap-2">
-                      <Camera className="h-4 w-4 shrink-0 text-slate-500" />
-                      <div className="min-w-0">
-                        <p className="truncate text-[11px] font-semibold text-slate-700">{p.name}</p>
-                        <p className="text-[10px] text-slate-400">{p.size} MB</p>
+                    {p.url ? (
+                      <img
+                        src={p.url}
+                        alt={p.name}
+                        className="h-24 w-full rounded-lg object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-24 items-center justify-center rounded-lg bg-slate-100 text-slate-400">
+                        <Camera className="h-6 w-6" />
                       </div>
+                    )}
+                    <div className="mt-1 flex items-center justify-between px-1">
+                      <p className="truncate text-[10px] font-semibold text-slate-700">{p.name}</p>
+                      <p className="text-[9px] text-slate-400">{p.size}MB</p>
                     </div>
                     <button
+                      type="button"
                       onClick={() => setPhotos((x) => x.filter((i) => i.id !== p.id))}
-                      className="absolute right-1.5 top-1.5 rounded-lg bg-white/90 p-1 text-slate-500 opacity-0 shadow transition group-hover:opacity-100 hover:text-red-600"
+                      className="absolute right-2 top-2 rounded-lg bg-white/90 p-1.5 text-slate-500 opacity-90 shadow transition hover:bg-red-50 hover:text-red-600"
+                      title="ลบรูปภาพ"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                     </button>
