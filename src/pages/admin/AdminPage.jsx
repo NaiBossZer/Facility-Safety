@@ -38,6 +38,18 @@ export function AdminPage({ onExit }) {
   const auth = useAdminAuth();
   const [activeTab, setActiveTab] = useState("personnel");
 
+  // Loading guard: รอ hashPin() เสร็จก่อน (async ใน useAdminAuth)
+  if (auth.initializing) {
+    return (
+      <div className="flex min-h-[40vh] items-center justify-center">
+        <div className="flex flex-col items-center gap-3 text-slate-400">
+          <div className="h-10 w-10 animate-spin rounded-full border-4 border-slate-200 border-t-indigo-600" />
+          <p className="text-sm font-semibold">กำลังเตรียมระบบ...</p>
+        </div>
+      </div>
+    );
+  }
+
   // If not unlocked, show PIN Gate Modal
   if (!auth.unlocked) {
     return <PinGate auth={auth} onCancel={onExit} />;

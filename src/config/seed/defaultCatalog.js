@@ -329,5 +329,42 @@ export function buildDefaultCatalog() {
       fiscalYear: 2569,
       total: 2500000,
     },
+
+    // รายชื่อบุคลากร — ใช้ Login เข้าระบบ (pin เริ่มต้น 1234)
+    personnel: [
+      {
+        id: "per_1",
+        name: "นายสมชาย ตรวจดี",
+        position: "เจ้าหน้าที่ตรวจสอบอาคารและความปลอดภัย",
+        department: "งานอาคารสถานที่และยานพาหนะ",
+        role: "inspector",
+        phone: "081-234-5678",
+        email: "somchai.tru@mahidol.edu",
+        isResponsible: true,
+        pin: "1234",
+      },
+      {
+        id: "per_2",
+        name: "นายประเสริฐ มั่นคงชัย",
+        position: "หัวหน้างานอาคารสถานที่และความปลอดภัย",
+        department: "งานอาคารสถานที่และยานพาหนะ",
+        role: "section_head",
+        phone: "089-987-6543",
+        email: "prasert.man@mahidol.edu",
+        isResponsible: true,
+        pin: "1234",
+      },
+      {
+        id: "per_3",
+        name: "ผศ.ดร. นิทัศน์ สมานพงษ์",
+        position: "รองคณบดีฝ่ายบริหารและพันธกิจเพื่อสังคม",
+        department: "สำนักงานคณบดี",
+        role: "deputy_dean",
+        phone: "054-234-000",
+        email: "nitad.sam@mahidol.edu",
+        isResponsible: false,
+        pin: "1234",
+      },
+    ],
   };
 }

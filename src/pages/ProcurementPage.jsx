@@ -6,8 +6,6 @@ import React, { useState, useEffect } from "react";
 import {
   FileText,
   Printer,
-  Send,
-  BadgeCheck,
   Store,
   FileCheck2,
   Loader2,
@@ -127,15 +125,6 @@ export function ProcurementPage() {
     }
   };
 
-  const sendEOffice = () => {
-    setBusy(true);
-    setTimeout(() => {
-      updateWorkOrder(wo.id, { eoffice: true });
-      setBusy(false);
-      toast.success(`ส่งขออนุมัติเอกสารแบบ ${tab === "001" ? "งพ 001" : "งพ 003"} ไปยัง E-OFFICE แล้ว`);
-    }, 800);
-  };
-
   const Field = ({ label, value, onChange, placeholder = "" }) => (
     <label className="block">
       <span className="mb-1 block text-xs font-bold text-slate-500">{label}</span>
@@ -247,24 +236,6 @@ export function ProcurementPage() {
             {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Printer className="h-4 w-4" />}{" "}
             พิมพ์เอกสาร / Export PDF
           </button>
-
-          <button
-            onClick={sendEOffice}
-            disabled={busy}
-            className={cx(
-              "flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold text-white shadow-md transition active:scale-95",
-              busy ? "bg-slate-400" : "bg-indigo-600 shadow-indigo-200 hover:bg-indigo-700"
-            )}
-          >
-            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}{" "}
-            ส่งขออนุมัติไปยัง E-OFFICE
-          </button>
-
-          {wo.eoffice && (
-            <Badge className="self-center border-emerald-200 bg-emerald-50 px-3 py-2 text-emerald-700">
-              <BadgeCheck className="h-4 w-4" /> เอกสารนี้ส่ง E-OFFICE แล้ว
-            </Badge>
-          )}
         </div>
       </div>
 

@@ -7,6 +7,8 @@ import { Sidebar } from "./components/layout/Sidebar";
 import { Header } from "./components/layout/Header";
 import { BottomNav } from "./components/layout/BottomNav";
 import { Toast } from "./components/ui/Toast";
+import { useAuth } from "./hooks/useAuth";
+import { LoginPage } from "./pages/LoginPage";
 
 import { DashboardPage } from "./pages/DashboardPage";
 import { InspectionPage } from "./pages/InspectionPage";
@@ -18,6 +20,12 @@ import { AdminPage } from "./pages/admin/AdminPage";
 export default function App() {
   const { page, setPage } = useAppData();
   const [menuOpen, setMenuOpen] = useState(false);
+  const { currentUser, login, logout } = useAuth();
+
+  // ถ้ายังไม่ได้ login → แสดงหน้า Login
+  if (!currentUser) {
+    return <LoginPage onLogin={login} />;
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans text-slate-800 antialiased">
@@ -52,17 +60,17 @@ export default function App() {
       `}</style>
 
       {/* Sidebar Navigation (Desktop & Mobile Drawer) */}
-      <Sidebar menuOpen={menuOpen} setMenuOpen={setMenuOpen} />
+      <Sidebar menuOpen={menuOpen} setMenuOpen={setMenuOpen} currentUser={currentUser} onLogout={logout} />
 
       {/* Main Content Area */}
       <div className="lg:pl-64">
         {/* Header Bar */}
-        <Header setMenuOpen={setMenuOpen} />
+        <Header setMenuOpen={setMenuOpen} currentUser={currentUser} onLogout={logout} />
 
         {/* Page Views Router */}
         <main className="px-4 pb-28 pt-5 sm:px-6 lg:pb-10">
           {page === "dashboard" && <DashboardPage />}
-          {page === "inspection" && <InspectionPage />}
+          {page === "inspection" && <InspectionPage currentUser={currentUser} />}
           {page === "workorder" && <WorkOrderPage />}
           {page === "procurement" && <ProcurementPage />}
           {page === "reports" && <ReportsPage />}

@@ -135,7 +135,7 @@ function ChecklistItemRow({ item, value, onChange, index, onQuickEdit, onDelete 
   );
 }
 
-export function InspectionPage() {
+export function InspectionPage({ currentUser }) {
   const { cat, submitInspection, toast, setPage } = useAppData();
 
   // 1. Dual Track State
@@ -238,20 +238,29 @@ export function InspectionPage() {
 
     setSending(true);
     setTimeout(() => {
-      submitInspection({
-        buildingId,
-        track: activeTrack,
-        inspector: "นายสมชาย ตรวจดี (เจ้าหน้าที่ตรวจอาคาร)",
-        date: new Date().toISOString().slice(0, 10),
-        results,
-        notes: note ? { general: note } : {},
-      });
+      try {
+        const inspectorName = currentUser
+          ? `${currentUser.name} (${currentUser.position})`
+          : "ไม่ระบุผู้ตรวจ";
+        submitInspection({
+          buildingId,
+          track: activeTrack,
+          inspector: inspectorName,
+          date: new Date().toISOString().slice(0, 10),
+          results,
+          notes: note ? { general: note } : {},
+        });
 
-      setResults({});
-      setNote("");
-      setPhotos([]);
-      setSending(false);
-      setPage("workorder");
+        setResults({});
+        setNote("");
+        setPhotos([]);
+        setSending(false);
+        setPage("workorder");
+      } catch (err) {
+        console.error("[InspectionPage] submitInspection ล้มเหลว:", err);
+        toast.error("เกิดข้อผิดพลาดในการบันทึก — กรุณาลองใหม่อีกครั้ง");
+        setSending(false);
+      }
     }, 600);
   };
 
@@ -809,7 +818,7 @@ export function InspectionPage() {
           <p className="mt-2.5 text-center text-[11px] leading-relaxed text-slate-400">
             ระบบจะสร้างใบแจ้งซ่อม (Work Order)
             <br />
-            พร้อมนำเข้าสู่ระบบเอกสารจัดซื้อ งพ.001 อัตโนมัติ
+            อัตโนมัติเมื่อพบสิ่งผิดปกติ
           </p>
         </div>
       </div>
