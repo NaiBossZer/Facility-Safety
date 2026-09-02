@@ -20,10 +20,12 @@ import {
   BudgetManager,
   SettingsManager,
 } from "./OtherManagers";
+import { PersonnelManager } from "./PersonnelManager";
 import { SectionTitle } from "../../components/ui/SectionTitle";
 import { cx } from "../../lib/helpers";
 
 const TABS = [
+  { id: "personnel",name: "บุคลากร & ผู้รับผิดชอบ", icon: Users },
   { id: "catalog",  name: "หมวด & รายการตรวจ", icon: Layers },
   { id: "building", name: "ข้อมูลอาคาร",         icon: Building2 },
   { id: "vendor",   name: "ร้านค้า/ผู้ขาย",       icon: Store },
@@ -33,7 +35,7 @@ const TABS = [
 
 export function AdminPage({ onExit }) {
   const auth = useAdminAuth();
-  const [activeTab, setActiveTab] = useState("catalog");
+  const [activeTab, setActiveTab] = useState("personnel");
 
   // If not unlocked, show PIN Gate Modal
   if (!auth.unlocked) {
@@ -45,13 +47,13 @@ export function AdminPage({ onExit }) {
       {/* Admin Header with Lock session button */}
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
         <div className="flex items-center gap-3">
-          <span className="rounded-xl bg-slate-900 p-2.5 text-white shadow-md">
-            <ShieldCheck className="h-6 w-6 text-emerald-400" />
+          <span className="rounded-xl bg-[#002D62] p-2.5 text-white shadow-md">
+            <ShieldCheck className="h-6 w-6 text-[#F2A900]" />
           </span>
           <div>
-            <h2 className="text-xl font-extrabold text-slate-800">ผู้ดูแลระบบ (Admin Console)</h2>
+            <h2 className="text-xl font-extrabold text-[#002D62]">ระบบจัดการผู้ดูแลระบบ (Admin Console)</h2>
             <p className="text-xs text-slate-400">
-              จัดการ Catalog, ข้อมูลอาคาร, ผู้ขาย และตั้งค่าระบบความปลอดภัย
+              จัดการฐานข้อมูลบุคลากร, แคตตาล็อก, อาคารสถานที่, ผู้ขาย และซิงก์ Google Sheets
             </p>
           </div>
         </div>
@@ -76,7 +78,7 @@ export function AdminPage({ onExit }) {
               className={cx(
                 "flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold transition active:scale-95",
                 on
-                  ? "bg-slate-900 text-white shadow-md"
+                  ? "bg-[#002D62] text-white shadow-md"
                   : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50"
               )}
             >
@@ -89,6 +91,7 @@ export function AdminPage({ onExit }) {
 
       {/* Tab Content Views */}
       <main>
+        {activeTab === "personnel" && <PersonnelManager />}
         {activeTab === "catalog" && <CatalogManager />}
         {activeTab === "building" && <BuildingManager />}
         {activeTab === "vendor" && <VendorManager />}
