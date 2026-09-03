@@ -2,7 +2,7 @@
 // useCatalogSupabase.js — Supabase-based catalog management
 // Extends the existing catalog logic with Supabase persistence
 // ============================================================
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
 import { 
   ensureCatalogStructure, 
   addCategory, 
@@ -18,99 +18,131 @@ import {
   addVendor,
   updateVendor,
   toggleVendor,
-  updateBudget
+  updateBudget,
+  getCategories,
+  getBuildings,
+  getVendors,
+  getItems,
+  countItemsByCategory,
+  checkIntegrity,
+  getItem,
+  getCategory,
+  getItemUsage,
+  itemPartsTotal
 } from "../lib/catalog";
 import { saveCatalog } from "../lib/supabaseData";
+import { writeJSON } from "../lib/storage";
+
+const LOCAL_CATALOG_KEY = "fsa:v2:catalog";
 
 export function useCatalogSupabase(catalog, setCatalog, { workOrders = [], inspections = [] } = {}) {
   const safeCatalog = ensureCatalogStructure(catalog);
 
+  const persistCatalog = useCallback(async (updated) => {
+    setCatalog(updated);
+    writeJSON(LOCAL_CATALOG_KEY, updated);
+    try {
+      await saveCatalog(updated);
+      return { ok: true };
+    } catch (error) {
+      console.warn("Supabase catalog save failed; local catalog retained", error);
+      return { ok: false, error };
+    }
+  }, [setCatalog]);
+
   // ---- CATEGORIES ----
   const handleAddCategory = useCallback(async (category) => {
     const updated = addCategory(safeCatalog, category);
-    setCatalog(updated);
-    await saveCatalog(updated);
-  }, [safeCatalog, setCatalog]);
+    return await persistCatalog(updated);
+  }, [safeCatalog, persistCatalog]);
 
   const handleUpdateCategory = useCallback(async (categoryId, updates) => {
     const updated = updateCategory(safeCatalog, categoryId, updates);
-    setCatalog(updated);
-    await saveCatalog(updated);
-  }, [safeCatalog, setCatalog]);
+    return await persistCatalog(updated);
+  }, [safeCatalog, persistCatalog]);
 
   const handleDeleteCategory = useCallback(async (categoryId) => {
     const updated = toggleCategory(safeCatalog, categoryId, false);
-    setCatalog(updated);
-    await saveCatalog(updated);
-  }, [safeCatalog, setCatalog]);
+    return await persistCatalog(updated);
+  }, [safeCatalog, persistCatalog]);
 
   // ---- ITEMS ----
   const handleAddItem = useCallback(async (item) => {
     const updated = addItem(safeCatalog, item);
-    setCatalog(updated);
-    await saveCatalog(updated);
-  }, [safeCatalog, setCatalog]);
+    return await persistCatalog(updated);
+  }, [safeCatalog, persistCatalog]);
 
   const handleUpdateItem = useCallback(async (itemId, updates) => {
     const updated = updateItem(safeCatalog, itemId, updates);
-    setCatalog(updated);
-    await saveCatalog(updated);
-  }, [safeCatalog, setCatalog]);
+    return await persistCatalog(updated);
+  }, [safeCatalog, persistCatalog]);
 
   const handleDeleteItem = useCallback(async (itemId) => {
     const updated = toggleItem(safeCatalog, itemId, false);
-    setCatalog(updated);
-    await saveCatalog(updated);
-  }, [safeCatalog, setCatalog]);
+    return await persistCatalog(updated);
+  }, [safeCatalog, persistCatalog]);
 
   // ---- BUILDINGS ----
   const handleAddBuilding = useCallback(async (building) => {
     const updated = addBuilding(safeCatalog, building);
-    setCatalog(updated);
-    await saveCatalog(updated);
-  }, [safeCatalog, setCatalog]);
+    return await persistCatalog(updated);
+  }, [safeCatalog, persistCatalog]);
 
   const handleUpdateBuilding = useCallback(async (buildingId, updates) => {
     const updated = updateBuilding(safeCatalog, buildingId, updates);
-    setCatalog(updated);
-    await saveCatalog(updated);
-  }, [safeCatalog, setCatalog]);
+    return await persistCatalog(updated);
+  }, [safeCatalog, persistCatalog]);
 
   const handleDeleteBuilding = useCallback(async (buildingId) => {
     const updated = toggleBuilding(safeCatalog, buildingId, false);
-    setCatalog(updated);
-    await saveCatalog(updated);
-  }, [safeCatalog, setCatalog]);
+    return await persistCatalog(updated);
+  }, [safeCatalog, persistCatalog]);
 
   // ---- VENDORS ----
   const handleAddVendor = useCallback(async (vendor) => {
     const updated = addVendor(safeCatalog, vendor);
-    setCatalog(updated);
-    await saveCatalog(updated);
-  }, [safeCatalog, setCatalog]);
+    return await persistCatalog(updated);
+  }, [safeCatalog, persistCatalog]);
 
   const handleUpdateVendor = useCallback(async (vendorId, updates) => {
     const updated = updateVendor(safeCatalog, vendorId, updates);
-    setCatalog(updated);
-    await saveCatalog(updated);
-  }, [safeCatalog, setCatalog]);
+    return await persistCatalog(updated);
+  }, [safeCatalog, persistCatalog]);
 
   const handleDeleteVendor = useCallback(async (vendorId) => {
     const updated = toggleVendor(safeCatalog, vendorId, false);
-    setCatalog(updated);
-    await saveCatalog(updated);
-  }, [safeCatalog, setCatalog]);
+    return await persistCatalog(updated);
+  }, [safeCatalog, persistCatalog]);
 
   // ---- BUDGET ----
   const handleUpdateBudget = useCallback(async (budgetUpdates) => {
     const updated = updateBudget(safeCatalog, budgetUpdates);
-    setCatalog(updated);
-    await saveCatalog(updated);
-  }, [safeCatalog, setCatalog]);
+    return await persistCatalog(updated);
+  }, [safeCatalog, persistCatalog]);
+
+  const categories = useMemo(() => getCategories(safeCatalog), [safeCatalog]);
+  const allCategories = useMemo(() => getCategories(safeCatalog, { includeInactive: true }), [safeCatalog]);
+  const buildings = useMemo(() => getBuildings(safeCatalog), [safeCatalog]);
+  const allBuildings = useMemo(() => getBuildings(safeCatalog, { includeInactive: true }), [safeCatalog]);
+  const vendors = useMemo(() => getVendors(safeCatalog), [safeCatalog]);
+  const allVendors = useMemo(() => getVendors(safeCatalog, { includeInactive: true }), [safeCatalog]);
+  const budget = safeCatalog?.budget || { total: 0, fiscalYear: 0 };
+  const itemCounts = useMemo(() => countItemsByCategory(safeCatalog), [safeCatalog]);
+  const integrity = useMemo(() => checkIntegrity(safeCatalog), [safeCatalog]);
+  const itemsOf = useCallback((categoryId, opts) => getItems(safeCatalog, { categoryId, ...opts }), [safeCatalog]);
+  const itemById = useCallback((id) => getItem(safeCatalog, id), [safeCatalog]);
+  const categoryById = useCallback((id) => getCategory(safeCatalog, id), [safeCatalog]);
+  const usageOf = useCallback((itemId) => getItemUsage(itemId, { workOrders, inspections }), [workOrders, inspections]);
 
   return {
     // Catalog state
     catalog: safeCatalog,
+    categories, allCategories,
+    buildings, allBuildings,
+    vendors, allVendors,
+    budget, itemCounts, integrity,
+    itemsOf, itemById, categoryById, usageOf,
+    partsTotal: itemPartsTotal,
     
     // Categories
     addCategory: handleAddCategory,

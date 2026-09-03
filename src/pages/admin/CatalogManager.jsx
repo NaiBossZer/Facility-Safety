@@ -34,18 +34,19 @@ export function CatalogManager() {
   const items = selectedCatId ? cat.itemsOf(selectedCatId, { includeInactive: true }) : [];
 
   // Category Actions
-  const handleSaveCat = () => {
+  const handleSaveCat = async () => {
     try {
       if (!editingCat?.name?.trim()) {
         toast.error("กรุณากรอกชื่อหมวด");
         return;
       }
-      if (editingCat.id) {
-        cat.updateCategory(editingCat.id, editingCat);
-        toast.success("อัปเดตข้อมูลหมวดเรียบร้อย");
+      const result = editingCat.id
+        ? await cat.updateCategory(editingCat.id, editingCat)
+        : await cat.addCategory(editingCat);
+      if (result?.ok === false) {
+        toast.info("บันทึกในเครื่องแล้ว — Supabase ยังไม่มีสิทธิ์เขียนข้อมูล");
       } else {
-        cat.addCategory(editingCat);
-        toast.success("เพิ่มหมวดการตรวจใหม่เรียบร้อย");
+        toast.success(editingCat.id ? "อัปเดตข้อมูลหมวดเรียบร้อย" : "เพิ่มหมวดการตรวจใหม่เรียบร้อย");
       }
       setEditingCat(null);
     } catch (err) {
@@ -55,18 +56,19 @@ export function CatalogManager() {
   };
 
   // Item Actions
-  const handleSaveItem = () => {
+  const handleSaveItem = async () => {
     try {
       if (!editingItem?.label?.trim()) {
         toast.error("กรุณากรอกชื่อรายการตรวจ");
         return;
       }
-      if (editingItem.id) {
-        cat.updateItem(editingItem.id, editingItem);
-        toast.success("อัปเดตรายการตรวจเรียบร้อย");
+      const result = editingItem.id
+        ? await cat.updateItem(editingItem.id, editingItem)
+        : await cat.addItem({ ...editingItem, categoryId: selectedCatId });
+      if (result?.ok === false) {
+        toast.info("บันทึกในเครื่องแล้ว — Supabase ยังไม่มีสิทธิ์เขียนข้อมูล");
       } else {
-        cat.addItem({ ...editingItem, categoryId: selectedCatId });
-        toast.success("เพิ่มรายการตรวจเรียบร้อย");
+        toast.success(editingItem.id ? "อัปเดตรายการตรวจเรียบร้อย" : "เพิ่มรายการตรวจเรียบร้อย");
       }
       setShowItemDrawer(false);
       setEditingItem(null);

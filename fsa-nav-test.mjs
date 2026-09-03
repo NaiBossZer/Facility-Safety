@@ -1,7 +1,7 @@
 import { chromium } from 'playwright';
 const browser = await chromium.launch({ headless: true, executablePath: 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe' });
 const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
-const base = 'http://127.0.0.1:4174/';
+const base = 'http://127.0.0.1:4178/';
 await page.goto(base, { waitUntil: 'networkidle' });
 await page.locator('select').selectOption({ index: 1 });
 await page.locator('input[type="password"]').fill('1234');

@@ -241,7 +241,8 @@ export async function fetchUserPreferences(userId = 'default') {
       .from('user_preferences')
       .select('*')
       .eq('user_id', userId)
-      .single();
+      .limit(1)
+      .maybeSingle();
 
     if (error) {
       // If not found, return default
@@ -267,6 +268,7 @@ export async function saveUserPreferences(prefs) {
       .from('user_preferences')
       .select('id')
       .eq('user_id', prefs.user_id || "default")
+      .limit(1)
       .maybeSingle();
     if (findError) throw findError;
     if (existing?.id) {

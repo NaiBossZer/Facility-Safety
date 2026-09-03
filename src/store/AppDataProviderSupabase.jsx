@@ -68,17 +68,35 @@ export function AppDataProviderSupabase({ children }) {
           fetchSystemMeta()
         ]);
 
-        if (catalogData?.categories?.length || catalogData?.items?.length || catalogData?.buildings?.length || catalogData?.personnel?.length) {
-          setCatalog(catalogData);
-          writeJSON(LOCAL_STORAGE_KEYS.catalog, catalogData);
+        const localCatalog = readJSON(LOCAL_STORAGE_KEYS.catalog);
+        const remoteCatalog = catalogData || {};
+        const mergedCatalog = localCatalog ? {
+          ...localCatalog,
+          ...remoteCatalog,
+          categories: remoteCatalog.categories?.length ? remoteCatalog.categories : (localCatalog.categories || []),
+          items: remoteCatalog.items?.length ? remoteCatalog.items : (localCatalog.items || []),
+          buildings: remoteCatalog.buildings?.length ? remoteCatalog.buildings : (localCatalog.buildings || []),
+          vendors: remoteCatalog.vendors?.length ? remoteCatalog.vendors : (localCatalog.vendors || []),
+          budget: remoteCatalog.budget ? remoteCatalog.budget : localCatalog.budget,
+          personnel: remoteCatalog.personnel?.length ? remoteCatalog.personnel : (localCatalog.personnel || [])
+        } : remoteCatalog;
+        if (Object.keys(mergedCatalog).length) {
+          setCatalog(mergedCatalog);
+          writeJSON(LOCAL_STORAGE_KEYS.catalog, mergedCatalog);
         }
-        if (workOrdersData) {
+        const localWorkOrders = readJSON(LOCAL_STORAGE_KEYS.workOrders);
+        if (workOrdersData?.length) {
           setWorkOrders(workOrdersData);
           writeJSON(LOCAL_STORAGE_KEYS.workOrders, workOrdersData);
+        } else if (localWorkOrders?.length) {
+          setWorkOrders(localWorkOrders);
         }
-        if (inspectionsData) {
+        const localInspections = readJSON(LOCAL_STORAGE_KEYS.inspections);
+        if (inspectionsData?.length) {
           setInspections(inspectionsData);
           writeJSON(LOCAL_STORAGE_KEYS.inspections, inspectionsData);
+        } else if (localInspections?.length) {
+          setInspections(localInspections);
         }
         // Route is local UI/session state. Prefer the local route so refresh remains
         // stable even when Supabase RLS prevents preference writes.
