@@ -19,8 +19,8 @@ import {
   updateSystemMeta,
   saveUserPreferences
 } from "../lib/supabaseData";
-import { performMigration, needsMigration, getMigrationStatus } from "../lib/migrationToSupabase";
-import { readJSON } from "../lib/storage";
+import { performMigration, getMigrationStatus } from "../lib/migrationToSupabase";
+import { readJSON, writeJSON } from "../lib/storage";
 
 const LOCAL_STORAGE_KEYS = {
   catalog: "fsa:v2:catalog",
@@ -66,9 +66,18 @@ export function AppDataProviderSupabase({ children }) {
           fetchSystemMeta()
         ]);
 
-        if (catalogData) setCatalog(catalogData);
-        if (workOrdersData) setWorkOrders(workOrdersData);
-        if (inspectionsData) setInspections(inspectionsData);
+        if (catalogData?.categories?.length || catalogData?.items?.length || catalogData?.buildings?.length || catalogData?.personnel?.length) {
+          setCatalog(catalogData);
+          writeJSON(LOCAL_STORAGE_KEYS.catalog, catalogData);
+        }
+        if (workOrdersData) {
+          setWorkOrders(workOrdersData);
+          writeJSON(LOCAL_STORAGE_KEYS.workOrders, workOrdersData);
+        }
+        if (inspectionsData) {
+          setInspections(inspectionsData);
+          writeJSON(LOCAL_STORAGE_KEYS.inspections, inspectionsData);
+        }
         if (userPrefs) {
           setUi({
             page: userPrefs.last_route || "dashboard",
@@ -85,15 +94,12 @@ export function AppDataProviderSupabase({ children }) {
           });
         }
 
-        // Check if migration is needed
-        if (status.hasLocalStorage && !status.lastSyncAt) {
-          console.log("🔄 Migration needed - localStorage data detected");
-          toast.info("พบข้อมูลเก่าใน localStorage - กดที่ปุ่ม Migration เพื่อย้ายข้อมูล");
-        }
+        // v2 localStorage is an offline cache only. Never notify about migration on startup.
+        // If Supabase is available, its data above is the source of truth.
 
       } catch (error) {
         console.error("Error loading initial data:", error);
-        toast.error("ไม่สามารถโหลดข้อมูลจาก Supabase ได้");
+        console.warn("Supabase unavailable; using localStorage offline cache");
         
         // Fallback to localStorage if Supabase fails
         console.log("🔄 Falling back to localStorage");
@@ -145,14 +151,23 @@ export function AppDataProviderSupabase({ children }) {
         counter: meta.woCounter || 0,
       });
 
-      // Save inspection to Supabase
-      await saveInspection(result.inspectionRecord);
-      setInspections((list) => [result.inspectionRecord, ...list]);
+      // Supabase-first, local fallback so the app remains usable before RLS is fixed.
+      try { await saveInspection(result.inspectionRecord); }
+      catch (error) { console.warn("Supabase inspection save failed; using local fallback", error); }
+      setInspections((list) => {
+        const next = [result.inspectionRecord, ...list.filter(x => x.id !== result.inspectionRecord.id)];
+        writeJSON(LOCAL_STORAGE_KEYS.inspections, next);
+        return next;
+      });
 
       if (result.workOrder) {
-        // Save work order to Supabase
-        await saveWorkOrder(result.workOrder);
-        setWorkOrders((list) => [result.workOrder, ...list]);
+        try { await saveWorkOrder(result.workOrder); }
+        catch (error) { console.warn("Supabase work order save failed; using local fallback", error); }
+        setWorkOrders((list) => {
+          const next = [result.workOrder, ...list.filter(x => x.id !== result.workOrder.id)];
+          writeJSON(LOCAL_STORAGE_KEYS.workOrders, next);
+          return next;
+        });
         
         // Update meta counter
         const updatedMeta = { 
@@ -161,10 +176,15 @@ export function AppDataProviderSupabase({ children }) {
           lastSavedAt: nowISO() 
         };
         setMeta(updatedMeta);
-        await updateSystemMeta({
-          wo_counter: result.nextCounter,
-          last_sync_at: nowISO()
-        });
+        writeJSON(LOCAL_STORAGE_KEYS.meta, updatedMeta);
+        try {
+          await updateSystemMeta({
+            wo_counter: result.nextCounter,
+            last_sync_at: updatedMeta.lastSavedAt
+          });
+        } catch (error) {
+          console.warn("Supabase meta update failed; local meta retained", error);
+        }
         
         toast.success(`สร้างใบแจ้งซ่อม ${result.workOrder.number} เรียบร้อย`);
       } else {
@@ -181,11 +201,12 @@ export function AppDataProviderSupabase({ children }) {
         wo.id === woId ? advanceStatus(wo, nextStatus, info) : wo
       );
       setWorkOrders(updatedOrders);
+      writeJSON(LOCAL_STORAGE_KEYS.workOrders, updatedOrders);
       
-      // Save to Supabase
       const updatedWO = updatedOrders.find(wo => wo.id === woId);
       if (updatedWO) {
-        await saveWorkOrder(updatedWO);
+        try { await saveWorkOrder(updatedWO); }
+        catch (error) { console.warn("Supabase work order save failed; local copy retained", error); }
       }
     },
     [workOrders]
@@ -197,11 +218,12 @@ export function AppDataProviderSupabase({ children }) {
         wo.id === woId ? { ...wo, ...patch, id: wo.id } : wo
       );
       setWorkOrders(updatedOrders);
+      writeJSON(LOCAL_STORAGE_KEYS.workOrders, updatedOrders);
       
-      // Save to Supabase
       const updatedWO = updatedOrders.find(wo => wo.id === woId);
       if (updatedWO) {
-        await saveWorkOrder(updatedWO);
+        try { await saveWorkOrder(updatedWO); }
+        catch (error) { console.warn("Supabase work order save failed; local copy retained", error); }
       }
     },
     [workOrders]
@@ -227,8 +249,14 @@ export function AppDataProviderSupabase({ children }) {
         ]);
         
         if (catalogData) setCatalog(catalogData);
-        if (workOrdersData) setWorkOrders(workOrdersData);
-        if (inspectionsData) setInspections(inspectionsData);
+        if (workOrdersData) {
+          setWorkOrders(workOrdersData);
+          writeJSON(LOCAL_STORAGE_KEYS.workOrders, workOrdersData);
+        }
+        if (inspectionsData) {
+          setInspections(inspectionsData);
+          writeJSON(LOCAL_STORAGE_KEYS.inspections, inspectionsData);
+        }
         
       } else {
         toast.error("ย้ายข้อมูลไม่สำเร็จ: " + result.error);

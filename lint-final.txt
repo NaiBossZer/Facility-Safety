@@ -1,0 +1,6 @@
+
+> facility-safety-app@0.0.0 lint
+> oxlint ; type lint-final.txt
+
+No files found to lint. Please check your paths and ignore patterns.
+Finished in 10ms on 0 files with 104 rules using 12 threads.

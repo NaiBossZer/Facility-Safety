@@ -10,7 +10,8 @@ const LOCAL_STORAGE_KEYS = {
   workOrders: "fsa:v2:workOrders", 
   inspections: "fsa:v2:inspections",
   ui: "fsa:v2:ui",
-  meta: "fsa:v2:meta"
+  meta: "fsa:v2:meta",
+  migrationCompleted: "fsa:v2:migrationCompleted"
 };
 
 export async function performMigration() {
@@ -38,6 +39,7 @@ export async function performMigration() {
     const result = await migrateLocalStorageToSupabase(localStorageData);
     
     if (result.ok) {
+      localStorage.setItem(LOCAL_STORAGE_KEYS.migrationCompleted, new Date().toISOString());
       console.log("✅ Migration completed successfully!");
       console.log("📊 Summary:");
       console.log(`   - Categories: ${localStorageData.catalog?.categories?.length || 0}`);
@@ -60,12 +62,9 @@ export async function performMigration() {
 
 // Function to check if migration is needed
 export function needsMigration() {
-  const hasLocalData = 
-    readJSON(LOCAL_STORAGE_KEYS.catalog) ||
-    readJSON(LOCAL_STORAGE_KEYS.workOrders) ||
-    readJSON(LOCAL_STORAGE_KEYS.inspections);
-  
-  return !!hasLocalData;
+  // fsa:v2:* is the current offline/cache layer, not legacy data.
+  // Migration must never be triggered merely because the cache exists.
+  return false;
 }
 
 // Function to get migration status
@@ -74,8 +73,13 @@ export async function getMigrationStatus() {
     const { fetchSystemMeta } = await import("./supabaseData");
     const meta = await fetchSystemMeta();
     
+    // A recorded Supabase sync means the v2 cache is no longer legacy data.
+    if (meta?.last_sync_at) {
+      localStorage.setItem(LOCAL_STORAGE_KEYS.migrationCompleted, meta.last_sync_at);
+    }
+
     return {
-      hasLocalStorage: needsMigration(),
+      hasLocalStorage: meta?.last_sync_at ? false : needsMigration(),
       lastSyncAt: meta?.last_sync_at,
       schemaVersion: meta?.schema_version
     };

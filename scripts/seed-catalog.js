@@ -19,6 +19,15 @@ if (!supabaseUrl || !supabaseAnonKey) {
 }
 
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
+const db = {
+ categories: c => c.map(x=>({id:x.id,track:x.track,name:x.name,color:x.color,icon:x.icon,order:x.order??0,active:x.active??true})),
+ items: c => c.map(x=>({id:x.id,category_id:x.categoryId,label:x.label,standard:x.standard||null,frequency:x.frequency||null,critical:Boolean(x.critical),parts:x.parts||[],order:x.order??0,active:x.active??true})),
+ buildings: c => c.map(x=>({id:x.id,name:x.name,code:x.code,detail:x.detail||null,order:x.order??0,active:x.active??true})),
+ vendors: c => c.map(x=>({id:x.id,name:x.name,tax:x.tax||null,tel:x.tel||null,factor:x.factor??1,order:x.order??0,active:x.active??true})),
+ budget: x => ({fiscal_year:x.fiscalYear,total:x.total}),
+ personnel: c => c.map(x=>({id:x.id,name:x.name,position:x.position||null,department:x.department||null,role:x.role,phone:x.phone||null,email:x.email||null,is_responsible:Boolean(x.isResponsible),pin:x.pin,active:x.active??true}))
+};
+
 
 async function seedCatalog() {
   console.log('🌱 Seeding catalog data to Supabase...');
@@ -30,7 +39,7 @@ async function seedCatalog() {
     console.log('\n📁 Inserting categories...');
     const { data: catData, error: catError } = await supabase
       .from('categories')
-      .upsert(catalog.categories)
+      .upsert(db.categories(catalog.categories))
       .select();
     
     if (catError) throw catError;
@@ -40,7 +49,7 @@ async function seedCatalog() {
     console.log('\n📝 Inserting items...');
     const { data: itemData, error: itemError } = await supabase
       .from('items')
-      .upsert(catalog.items)
+      .upsert(db.items(catalog.items))
       .select();
     
     if (itemError) throw itemError;
@@ -50,7 +59,7 @@ async function seedCatalog() {
     console.log('\n🏢 Inserting buildings...');
     const { data: bldData, error: bldError } = await supabase
       .from('buildings')
-      .upsert(catalog.buildings)
+      .upsert(db.buildings(catalog.buildings))
       .select();
     
     if (bldError) throw bldError;
@@ -60,7 +69,7 @@ async function seedCatalog() {
     console.log('\n🏪 Inserting vendors...');
     const { data: venData, error: venError } = await supabase
       .from('vendors')
-      .upsert(catalog.vendors)
+      .upsert(db.vendors(catalog.vendors))
       .select();
     
     if (venError) throw venError;
@@ -70,7 +79,7 @@ async function seedCatalog() {
     console.log('\n💰 Inserting budget...');
     const { data: budData, error: budError } = await supabase
       .from('budget')
-      .upsert(catalog.budget)
+      .upsert(db.budget(catalog.budget))
       .select();
     
     if (budError) throw budError;
@@ -80,7 +89,7 @@ async function seedCatalog() {
     console.log('\n👥 Inserting personnel...');
     const { data: perData, error: perError } = await supabase
       .from('personnel')
-      .upsert(catalog.personnel)
+      .upsert(db.personnel(catalog.personnel))
       .select();
     
     if (perError) throw perError;

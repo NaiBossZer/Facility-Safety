@@ -7,7 +7,7 @@ import {
   Loader2, Calendar, MapPin, ClipboardList, Hammer, ShoppingCart, Activity,
   FileCheck2, ArrowRight, Trash2, User, Gauge,
 } from "lucide-react";
-function DashboardPage({ workOrders, goto, setSelectedWO }) {
+function LegacyDashboardPage({ workOrders, goto, setSelectedWO }) {
   // คำนวณ Stats จาก workOrders ที่ส่งเข้ามา
   const stats = {
     total: workOrders.length,

@@ -3,6 +3,18 @@
 // เขียน/อ่านข้อมูลจาก Supabase แทน localStorage
 // ============================================================
 import { supabase } from "./supabaseClient";
+const fromDbWorkOrder=w=>({...w,buildingId:w.building_id,buildingName:w.building_name,buildingCode:w.building_code,createdAt:w.created_at,catalogVersionAt:w.catalog_version_at,sourceItemIds:w.source_item_ids||[],history:w.history||[],procurement:w.procurement??null,photos:w.photos||[],items:w.items||[]});
+const toDbWorkOrder=w=>({id:w.id,number:w.number,building_id:w.buildingId,building_name:w.buildingName||"-",building_code:w.buildingCode||"-",title:w.title,reporter:w.reporter||"-",reason:w.reason||null,created_at:w.createdAt,date:w.date,status:Number(w.status??1),priority:w.priority||"normal",findings:w.findings||[],source_item_ids:w.sourceItemIds||[],items:w.items||[],total:Number(w.total??0),photos:w.photos||[],catalog_version_at:w.catalogVersionAt??null,history:w.history||[],procurement:w.procurement??null});
+const fromDbInspection=i=>({...i,buildingId:i.building_id,createdAt:i.created_at,workOrderId:i.work_order_id,notes:i.notes||{},results:i.results||{},photos:i.photos||[],summary:i.summary||{}});
+const toDbInspection=i=>({id:i.id,building_id:i.buildingId,inspector:i.inspector||"-",date:i.date,created_at:i.createdAt,results:i.results||{},notes:i.notes||{},photos:i.photos||[],summary:i.summary||{},work_order_id:i.workOrderId||null});
+const mapCategory=x=>({...x,order:x.order,active:x.active});
+const mapItem=x=>({...x,categoryId:x.category_id,unitPrice:x.unit_price,createdAt:x.created_at,updatedAt:x.updated_at});
+const mapBuilding=x=>({...x,code:x.code,order:x.order,active:x.active});
+const mapVendor=x=>({...x,factor:Number(x.factor??1),order:x.order,active:x.active});
+const mapBudget=x=>x?({fiscalYear:x.fiscal_year,total:Number(x.total??0),id:x.id}):{fiscalYear:2569,total:2500000};
+const mapPersonnel=x=>({...x,isResponsible:x.is_responsible});
+const toDbCatalog=c=>({categories:(c.categories||[]).map(x=>({id:x.id,track:x.track,name:x.name,color:x.color,icon:x.icon,order:x.order??0,active:x.active??true})),items:(c.items||[]).map(x=>({id:x.id,category_id:x.categoryId,label:x.label,standard:x.standard||null,frequency:x.frequency||null,critical:Boolean(x.critical),parts:x.parts||[],order:x.order??0,active:x.active??true})),buildings:(c.buildings||[]).map(x=>({id:x.id,name:x.name,code:x.code,detail:x.detail||null,order:x.order??0,active:x.active??true})),vendors:(c.vendors||[]).map(x=>({id:x.id,name:x.name,tax:x.tax||null,tel:x.tel||null,factor:x.factor??1,order:x.order??0,active:x.active??true})),budget:c.budget?{id:c.budget.id,fiscal_year:c.budget.fiscalYear,total:c.budget.total}:{fiscal_year:2569,total:2500000},personnel:(c.personnel||[]).map(x=>({id:x.id,name:x.name,position:x.position||null,department:x.department||null,role:x.role,phone:x.phone||null,email:x.email||null,is_responsible:Boolean(x.isResponsible),pin:x.pin,active:x.active??true}))});
+
 
 // ============================================================
 // CATALOG OPERATIONS
@@ -28,12 +40,12 @@ export async function fetchCatalog() {
 
     return {
       catalogVersion: 2,
-      categories: categories.data || [],
-      items: items.data || [],
-      buildings: buildings.data || [],
-      vendors: vendors.data || [],
-      budget: budget.data?.[0] || { fiscalYear: 2569, total: 2500000 },
-      personnel: personnel.data || []
+      categories: (categories.data || []).map(mapCategory),
+      items: (items.data || []).map(mapItem),
+      buildings: (buildings.data || []).map(mapBuilding),
+      vendors: (vendors.data || []).map(mapVendor),
+      budget: mapBudget(budget.data?.[0]),
+      personnel: (personnel.data || []).map(mapPersonnel)
     };
   } catch (error) {
     console.error('Error fetching catalog:', error);
@@ -47,7 +59,7 @@ export async function saveCatalog(catalog) {
     if (catalog.categories) {
       const { error: catError } = await supabase
         .from('categories')
-        .upsert(catalog.categories);
+        .upsert(toDbCatalog(catalog).categories);
       if (catError) throw catError;
     }
 
@@ -55,7 +67,7 @@ export async function saveCatalog(catalog) {
     if (catalog.items) {
       const { error: itemError } = await supabase
         .from('items')
-        .upsert(catalog.items);
+        .upsert(toDbCatalog(catalog).items);
       if (itemError) throw itemError;
     }
 
@@ -63,7 +75,7 @@ export async function saveCatalog(catalog) {
     if (catalog.buildings) {
       const { error: bldError } = await supabase
         .from('buildings')
-        .upsert(catalog.buildings);
+        .upsert(toDbCatalog(catalog).buildings);
       if (bldError) throw bldError;
     }
 
@@ -71,7 +83,7 @@ export async function saveCatalog(catalog) {
     if (catalog.vendors) {
       const { error: venError } = await supabase
         .from('vendors')
-        .upsert(catalog.vendors);
+        .upsert(toDbCatalog(catalog).vendors);
       if (venError) throw venError;
     }
 
@@ -79,7 +91,7 @@ export async function saveCatalog(catalog) {
     if (catalog.budget) {
       const { error: budError } = await supabase
         .from('budget')
-        .upsert(catalog.budget);
+        .upsert(toDbCatalog(catalog).budget);
       if (budError) throw budError;
     }
 
@@ -87,7 +99,7 @@ export async function saveCatalog(catalog) {
     if (catalog.personnel) {
       const { error: perError } = await supabase
         .from('personnel')
-        .upsert(catalog.personnel);
+        .upsert(toDbCatalog(catalog).personnel);
       if (perError) throw perError;
     }
 
@@ -110,7 +122,7 @@ export async function fetchWorkOrders() {
       .order('created_at', { ascending: false });
 
     if (error) throw error;
-    return data || [];
+    return (data || []).map(fromDbWorkOrder);
   } catch (error) {
     console.error('Error fetching work orders:', error);
     throw error;
@@ -121,7 +133,7 @@ export async function saveWorkOrder(workOrder) {
   try {
     const { data, error } = await supabase
       .from('work_orders')
-      .upsert(workOrder)
+      .upsert(toDbWorkOrder(workOrder))
       .select()
       .single();
 
@@ -160,7 +172,7 @@ export async function fetchInspections() {
       .order('date', { ascending: false });
 
     if (error) throw error;
-    return data || [];
+    return (data || []).map(fromDbInspection);
   } catch (error) {
     console.error('Error fetching inspections:', error);
     throw error;
@@ -171,7 +183,7 @@ export async function saveInspection(inspection) {
   try {
     const { data, error } = await supabase
       .from('inspections')
-      .upsert(inspection)
+      .upsert(toDbInspection(inspection))
       .select()
       .single();
 
@@ -251,12 +263,18 @@ export async function fetchUserPreferences(userId = 'default') {
 
 export async function saveUserPreferences(prefs) {
   try {
-    const { data, error } = await supabase
+    const { data: existing, error: findError } = await supabase
       .from('user_preferences')
-      .upsert(prefs)
-      .select()
-      .single();
-
+      .select('id')
+      .eq('user_id', prefs.user_id || "default")
+      .maybeSingle();
+    if (findError) throw findError;
+    if (existing?.id) {
+      const { data, error } = await supabase.from('user_preferences').update(prefs).eq('id', existing.id).select().single();
+      if (error) throw error;
+      return { ok: true, data };
+    }
+    const { data, error } = await supabase.from('user_preferences').insert(prefs).select().single();
     if (error) throw error;
     return { ok: true, data };
   } catch (error) {

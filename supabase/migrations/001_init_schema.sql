@@ -1,5 +1,5 @@
--- ============================================================
--- 001_init_schema.sql — Facility & Safety Management Database Schema
+﻿-- ============================================================
+-- 001_init_schema.sql โ€” Facility & Safety Management Database Schema
 -- Mirror localStorage structure with proper PostgreSQL types
 -- ============================================================
 
@@ -10,7 +10,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 -- CATALOG TABLES
 -- ============================================================
 
--- Categories (หมวดหมู่การตรวจสอบ)
+-- Categories (เธซเธกเธงเธ”เธซเธกเธนเนเธเธฒเธฃเธ•เธฃเธงเธเธชเธญเธ)
 CREATE TABLE categories (
   id TEXT PRIMARY KEY,
   track TEXT NOT NULL CHECK (track IN ('safety_legal', 'facility_continuity')),
@@ -23,7 +23,7 @@ CREATE TABLE categories (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Items (รายการตรวจสอบ)
+-- Items (เธฃเธฒเธขเธเธฒเธฃเธ•เธฃเธงเธเธชเธญเธ)
 CREATE TABLE items (
   id TEXT PRIMARY KEY,
   category_id TEXT NOT NULL REFERENCES categories(id) ON DELETE CASCADE,
@@ -38,7 +38,7 @@ CREATE TABLE items (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Buildings (อาคาร)
+-- Buildings (เธญเธฒเธเธฒเธฃ)
 CREATE TABLE buildings (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL,
@@ -50,7 +50,7 @@ CREATE TABLE buildings (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Vendors (ผู้ขาย)
+-- Vendors (เธเธนเนเธเธฒเธข)
 CREATE TABLE vendors (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL,
@@ -63,7 +63,7 @@ CREATE TABLE vendors (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Budget (งบประมาณ)
+-- Budget (เธเธเธเธฃเธฐเธกเธฒเธ“)
 CREATE TABLE budget (
   id SERIAL PRIMARY KEY,
   fiscal_year INTEGER NOT NULL,
@@ -72,7 +72,7 @@ CREATE TABLE budget (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Personnel (บุคลากร)
+-- Personnel (เธเธธเธเธฅเธฒเธเธฃ)
 CREATE TABLE personnel (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL,
@@ -92,7 +92,7 @@ CREATE TABLE personnel (
 -- WORK ORDERS & INSPECTIONS
 -- ============================================================
 
--- Work Orders (ใบแจ้งซ่อม)
+-- Work Orders (เนเธเนเธเนเธเธเนเธญเธก)
 CREATE TABLE work_orders (
   id TEXT PRIMARY KEY,
   number TEXT NOT NULL UNIQUE,
@@ -117,7 +117,7 @@ CREATE TABLE work_orders (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Inspections (ประวัติการตรวจ)
+-- Inspections (เธเธฃเธฐเธงเธฑเธ•เธดเธเธฒเธฃเธ•เธฃเธงเธ)
 CREATE TABLE inspections (
   id TEXT PRIMARY KEY,
   building_id TEXT NOT NULL REFERENCES buildings(id),
@@ -173,7 +173,7 @@ CREATE INDEX idx_work_orders_building ON work_orders(building_id);
 CREATE INDEX idx_work_orders_status ON work_orders(status);
 CREATE INDEX idx_work_orders_priority ON work_orders(priority);
 CREATE INDEX idx_work_orders_date ON work_orders(date);
-CREATE INDEX idx_work_orders_created ON work_orders(created_at);
+CREATE INDEX idx_work_orders_created ON work_orders(created_at);\n\n-- One preference row per user for safe upsert\nCREATE UNIQUE INDEX IF NOT EXISTS idx_user_preferences_user_id ON user_preferences(user_id);
 
 -- Inspections
 CREATE INDEX idx_inspections_building ON inspections(building_id);
@@ -201,23 +201,17 @@ ALTER TABLE user_preferences ENABLE ROW LEVEL SECURITY;
 ALTER TABLE system_meta ENABLE ROW LEVEL SECURITY;
 
 -- Public read access for catalog data (no auth yet)
-CREATE POLICY "Public read access to categories" ON categories
-  FOR SELECT USING (true);
+CREATE POLICY "Public read access to categories" ON categories FOR SELECT USING (true);\nCREATE POLICY "Public write access to categories" ON categories FOR INSERT WITH CHECK (true);\nCREATE POLICY "Public update access to categories" ON categories FOR UPDATE USING (true);\nCREATE POLICY "Public delete access to categories" ON categories FOR DELETE USING (true);
 
-CREATE POLICY "Public read access to items" ON items
-  FOR SELECT USING (true);
+CREATE POLICY "Public read access to items" ON items FOR SELECT USING (true);\nCREATE POLICY "Public write access to items" ON items FOR INSERT WITH CHECK (true);\nCREATE POLICY "Public update access to items" ON items FOR UPDATE USING (true);\nCREATE POLICY "Public delete access to items" ON items FOR DELETE USING (true);
 
-CREATE POLICY "Public read access to buildings" ON buildings
-  FOR SELECT USING (true);
+CREATE POLICY "Public read access to buildings" ON buildings FOR SELECT USING (true);\nCREATE POLICY "Public write access to buildings" ON buildings FOR INSERT WITH CHECK (true);\nCREATE POLICY "Public update access to buildings" ON buildings FOR UPDATE USING (true);\nCREATE POLICY "Public delete access to buildings" ON buildings FOR DELETE USING (true);
 
-CREATE POLICY "Public read access to vendors" ON vendors
-  FOR SELECT USING (true);
+CREATE POLICY "Public read access to vendors" ON vendors FOR SELECT USING (true);\nCREATE POLICY "Public write access to vendors" ON vendors FOR INSERT WITH CHECK (true);\nCREATE POLICY "Public update access to vendors" ON vendors FOR UPDATE USING (true);\nCREATE POLICY "Public delete access to vendors" ON vendors FOR DELETE USING (true);
 
-CREATE POLICY "Public read access to budget" ON budget
-  FOR SELECT USING (true);
+CREATE POLICY "Public read access to budget" ON budget FOR SELECT USING (true);\nCREATE POLICY "Public write access to budget" ON budget FOR INSERT WITH CHECK (true);\nCREATE POLICY "Public update access to budget" ON budget FOR UPDATE USING (true);
 
-CREATE POLICY "Public read access to personnel" ON personnel
-  FOR SELECT USING (true);
+CREATE POLICY "Public read access to personnel" ON personnel FOR SELECT USING (true);\nCREATE POLICY "Public write access to personnel" ON personnel FOR INSERT WITH CHECK (true);\nCREATE POLICY "Public update access to personnel" ON personnel FOR UPDATE USING (true);\nCREATE POLICY "Public delete access to personnel" ON personnel FOR DELETE USING (true);
 
 -- Public read/write access for work orders and inspections
 CREATE POLICY "Public read access to work orders" ON work_orders
