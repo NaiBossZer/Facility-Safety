@@ -2,11 +2,12 @@
 // App.jsx — Modular Application Shell Root
 // ============================================================
 import React, { useState } from "react";
-import { useAppData } from "./store/AppDataProvider";
+import { useAppData } from "./store/AppDataProviderSupabase";
 import { Sidebar } from "./components/layout/Sidebar";
 import { Header } from "./components/layout/Header";
 import { BottomNav } from "./components/layout/BottomNav";
 import { Toast } from "./components/ui/Toast";
+import { MigrationBanner } from "./components/MigrationBanner";
 import { useAuth } from "./hooks/useAuth";
 import { LoginPage } from "./pages/LoginPage";
 
@@ -18,7 +19,7 @@ import { ReportsPage } from "./pages/ReportsPage";
 import { AdminPage } from "./pages/admin/AdminPage";
 
 export default function App() {
-  const { page, setPage } = useAppData();
+  const { page, setPage, migration } = useAppData();
   const [menuOpen, setMenuOpen] = useState(false);
   const { currentUser, login, logout } = useAuth();
 
@@ -69,6 +70,7 @@ export default function App() {
 
         {/* Page Views Router */}
         <main className="px-4 pb-28 pt-5 sm:px-6 lg:pb-10">
+          <MigrationBanner migration={migration} onMigrate={() => migration.runMigration()} />
           {page === "dashboard" && <DashboardPage />}
           {page === "inspection" && <InspectionPage currentUser={currentUser} />}
           {page === "workorder" && <WorkOrderPage />}
