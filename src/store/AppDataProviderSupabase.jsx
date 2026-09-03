@@ -2,7 +2,7 @@
 // AppDataProviderSupabase.jsx — Supabase-based data provider
 // Migration from localStorage to Supabase backend
 // ============================================================
-import { createContext, useContext, useMemo, useCallback, useEffect, useState } from "react";
+import { createContext, useContext, useMemo, useCallback, useEffect, useState, useRef } from "react";
 import { buildDefaultCatalog } from "../config/seed/defaultCatalog";
 import { useCatalogSupabase } from "../hooks/useCatalogSupabase";
 import { useToast } from "../hooks/useToast";
@@ -44,6 +44,8 @@ export function AppDataProviderSupabase({ children }) {
   
   // Loading states
   const [loading, setLoading] = useState(true);
+  const [dataInitialized, setDataInitialized] = useState(false);
+  const loadStartedRef = useRef(false);
   const [migrationStatus, setMigrationStatus] = useState({ hasLocalStorage: false, lastSyncAt: null });
   const [isMigrating, setIsMigrating] = useState(false);
 
@@ -78,12 +80,16 @@ export function AppDataProviderSupabase({ children }) {
           setInspections(inspectionsData);
           writeJSON(LOCAL_STORAGE_KEYS.inspections, inspectionsData);
         }
-        if (userPrefs) {
+        // Route is local UI/session state. Prefer the local route so refresh remains
+        // stable even when Supabase RLS prevents preference writes.
+        const localUI = readJSON(LOCAL_STORAGE_KEYS.ui);
+        if (userPrefs || localUI) {
           setUi({
-            page: userPrefs.last_route || "dashboard",
-            procureWO: null,
-            activeTrack: userPrefs.active_track || "safety_legal",
-            ...userPrefs.preferences
+            page: localUI?.page || userPrefs?.last_route || "dashboard",
+            procureWO: localUI?.procureWO || null,
+            activeTrack: userPrefs?.active_track || localUI?.activeTrack || "safety_legal",
+            ...(userPrefs?.preferences || {}),
+            ...(localUI || {})
           });
         }
         if (systemMeta) {
@@ -117,23 +123,31 @@ export function AppDataProviderSupabase({ children }) {
         
       } finally {
         setLoading(false);
+        setDataInitialized(true);
       }
     };
 
-    loadInitialData();
-  }, [toast]);
+    // Initial data load must run only once. A changing toast callback must not
+    // reload Supabase preferences and reset the current page to Dashboard.
+    if (!loadStartedRef.current) {
+      loadStartedRef.current = true;
+      loadInitialData();
+    }
+  }, []);
 
-  // Save UI preferences when they change
+  // Persist UI locally first so navigation survives refresh even if Supabase
+  // preference writes are blocked by RLS. Supabase remains best-effort sync.
   useEffect(() => {
-    if (!loading) {
+    if (!loading && dataInitialized) {
+      writeJSON(LOCAL_STORAGE_KEYS.ui, ui);
       saveUserPreferences({
         user_id: 'default',
         active_track: ui.activeTrack || 'safety_legal',
         last_route: ui.page,
         preferences: ui
-      }).catch(err => console.error("Error saving UI preferences:", err));
+      }).catch(err => console.warn("Supabase UI preference sync failed; local UI retained", err));
     }
-  }, [ui, loading]);
+  }, [ui, loading, dataInitialized]);
 
   const cat = useCatalogSupabase(catalog, setCatalog, { workOrders, inspections });
 
