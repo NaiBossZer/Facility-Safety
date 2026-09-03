@@ -254,6 +254,14 @@ export function AppDataProviderSupabase({ children }) {
     }
   }, []);
 
+  const restoreFromBackup = useCallback(() => {
+    window.location.reload();
+  }, []);
+
+  // ---------- LEGACY NAV FALLBACKS (Dashboard.jsx old signatures) ----------
+  const goto = useCallback((nextPage) => setUi((u) => ({ ...u, page: nextPage })), [setUi]);
+  const setSelectedWO = useCallback(() => { /* handled via procurement state */ }, []);
+
   const value = useMemo(
     () => ({
       // data
@@ -264,6 +272,7 @@ export function AppDataProviderSupabase({ children }) {
       setWorkOrders, setInspections, setUi, setMeta,
       // navigation
       page: ui.page, setPage, procureWO: ui.procureWO, openProcurement,
+      goto, setSelectedWO,
       // actions
       submitInspection, updateWorkOrderStatus, updateWorkOrder,
       // system
@@ -281,12 +290,13 @@ export function AppDataProviderSupabase({ children }) {
         runMigration,
         isMigrating
       },
-      wipeAll,
+      wipeAll, restoreFromBackup,
       loading
     }),
     [
       catalog, workOrders, inspections, ui, meta, stats, cat,
       setWorkOrders, setInspections, setUi, setMeta,
+      goto, setSelectedWO, restoreFromBackup,
       setPage, openProcurement, submitInspection,
       updateWorkOrderStatus, updateWorkOrder,
       toasts, toast, dismiss, migrationStatus, runMigration, isMigrating, wipeAll, loading
