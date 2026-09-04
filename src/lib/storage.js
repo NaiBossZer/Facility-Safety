@@ -42,7 +42,17 @@ export function readJSON(key, fallback = null) {
   try {
     const raw = window.localStorage.getItem(key);
     if (raw === null || raw === undefined) return fallback;
-    return JSON.parse(raw);
+    const value = JSON.parse(raw);
+    // Legacy personnel records may contain plaintext PINs. Never expose or
+    // rehydrate that field into the application cache.
+    if (key === KEYS.catalog && value?.personnel) {
+      const safeValue = { ...value, personnel: value.personnel.map(({ pin: _pin, ...person }) => person) };
+      if (JSON.stringify(safeValue) !== raw) {
+        try { window.localStorage.setItem(key, JSON.stringify(safeValue)); } catch { /* cache cleanup is best effort */ }
+      }
+      return safeValue;
+    }
+    return value;
   } catch (err) {
     console.warn(`[storage] อ่าน "${key}" ไม่สำเร็จ:`, err);
     return fallback;
@@ -56,7 +66,11 @@ export function readJSON(key, fallback = null) {
 export function writeJSON(key, value) {
   if (!isAvailable()) return { ok: false, error: "unavailable" };
   try {
-    window.localStorage.setItem(key, JSON.stringify(value));
+    let safeValue = value;
+    if (key === KEYS.catalog && value?.personnel) {
+      safeValue = { ...value, personnel: value.personnel.map(({ pin: _pin, ...person }) => person) };
+    }
+    window.localStorage.setItem(key, JSON.stringify(safeValue));
     return { ok: true, error: null };
   } catch (err) {
     const isQuota =
@@ -84,7 +98,7 @@ export function clearNamespace() {
   try {
     const keys = Object.keys(window.localStorage);
     keys.forEach((key) => {
-      if (key.startsWith(`${NS}:`)) {
+      if (key.startsWith(`${NS}:`) && !key.startsWith(`${NS}:secure:`)) {
         window.localStorage.removeItem(key);
         count += 1;
       }

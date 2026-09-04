@@ -16,11 +16,13 @@ import {
   fetchSystemMeta,
   saveWorkOrder,
   saveInspection,
-  updateSystemMeta,
+  reserveWorkOrderNumber,
   saveUserPreferences
 } from "../lib/supabaseData";
 import { performMigration, getMigrationStatus } from "../lib/migrationToSupabase";
 import { readJSON, writeJSON } from "../lib/storage";
+import { enqueueOutbox, removeOutbox, flushOutbox } from "../lib/outbox";
+import { enqueueNotification, flushNotifications } from "../lib/notificationService";
 
 const LOCAL_STORAGE_KEYS = {
   catalog: "fsa:v2:catalog",
@@ -48,6 +50,8 @@ export function AppDataProviderSupabase({ children }) {
   const loadStartedRef = useRef(false);
   const [migrationStatus, setMigrationStatus] = useState({ hasLocalStorage: false, lastSyncAt: null });
   const [isMigrating, setIsMigrating] = useState(false);
+  // Serialize inspection writes in this tab so the counter cannot be reused.
+  const submitLockRef = useRef(Promise.resolve());
 
   // Load initial data from Supabase
   useEffect(() => {
@@ -153,6 +157,16 @@ export function AppDataProviderSupabase({ children }) {
     }
   }, []);
 
+  // Retry all durable writes after startup, reconnect, and periodically while
+  // the app is open. The server remains the source of truth after a conflict.
+  useEffect(() => {
+    const flush = () => { void flushOutbox(); void flushNotifications(); };
+    flush();
+    window.addEventListener("online", flush);
+    const timer = window.setInterval(flush, 30000);
+    return () => { window.removeEventListener("online", flush); window.clearInterval(timer); };
+  }, []);
+
   // Persist UI locally first so navigation survives refresh even if Supabase
   // preference writes are blocked by RLS. Supabase remains best-effort sync.
   useEffect(() => {
@@ -178,28 +192,49 @@ export function AppDataProviderSupabase({ children }) {
 
   // ---------- BUSINESS LOGIC ----------
   const submitInspection = useCallback(
-    async (inspection) => {
+    (inspection) => {
+      const run = submitLockRef.current.then(async () => {
+      const hasProblem = Object.values(inspection?.results || {}).some((value) => value === "fail" || value === "warn");
+      let counter = Number(meta.woCounter || 0) + 1;
+      let workOrderNumber;
+      if (hasProblem && navigator.onLine !== false) {
+        try {
+          const reserved = await reserveWorkOrderNumber(inspection.date);
+          counter = reserved.counter;
+          workOrderNumber = reserved.number;
+        } catch (error) {
+          console.warn("Atomic WO counter unavailable; using offline counter", error);
+        }
+      }
       const result = createWorkOrderFromInspection(inspection, catalog, {
-        counter: meta.woCounter || 0,
+        counter: hasProblem ? counter - 1 : Number(meta.woCounter || 0),
+        workOrderNumber,
+        date: inspection.date,
       });
 
-      // Supabase-first, local fallback so the app remains usable before RLS is fixed.
-      try { await saveInspection(result.inspectionRecord); }
-      catch (error) { console.warn("Supabase inspection save failed; using local fallback", error); }
+      // Write the durable offline journal before network I/O. This survives app close.
       setInspections((list) => {
         const next = [result.inspectionRecord, ...list.filter(x => x.id !== result.inspectionRecord.id)];
         writeJSON(LOCAL_STORAGE_KEYS.inspections, next);
         return next;
       });
+      enqueueOutbox("inspection", result.inspectionRecord);
+      try { await saveInspection(result.inspectionRecord); removeOutbox("inspection", result.inspectionRecord.id); }
+      catch (error) { console.warn("Supabase inspection save failed; queued in local cache", error); }
 
       if (result.workOrder) {
-        try { await saveWorkOrder(result.workOrder); }
-        catch (error) { console.warn("Supabase work order save failed; using local fallback", error); }
         setWorkOrders((list) => {
           const next = [result.workOrder, ...list.filter(x => x.id !== result.workOrder.id)];
           writeJSON(LOCAL_STORAGE_KEYS.workOrders, next);
           return next;
         });
+        enqueueOutbox("work_order", result.workOrder);
+        try {
+          const saved = await saveWorkOrder(result.workOrder);
+          removeOutbox("work_order", result.workOrder.id);
+          if (saved.data?.version) setWorkOrders((list) => list.map((item) => item.id === result.workOrder.id ? { ...item, version: saved.data.version } : item));
+        }
+        catch (error) { console.warn("Supabase work order save failed; queued in local cache", error); }
         
         // Update meta counter
         const updatedMeta = { 
@@ -209,21 +244,21 @@ export function AppDataProviderSupabase({ children }) {
         };
         setMeta(updatedMeta);
         writeJSON(LOCAL_STORAGE_KEYS.meta, updatedMeta);
-        try {
-          await updateSystemMeta({
-            wo_counter: result.nextCounter,
-            last_sync_at: updatedMeta.lastSavedAt
-          });
-        } catch (error) {
-          console.warn("Supabase meta update failed; local meta retained", error);
-        }
+        enqueueNotification({
+          id: `wo-created:${result.workOrder.id}`,
+          title: "มีใบแจ้งซ่อมใหม่",
+          body: `${result.workOrder.number} — ${result.workOrder.title}`,
+        });
         
         toast.success(`สร้างใบแจ้งซ่อม ${result.workOrder.number} เรียบร้อย`);
       } else {
         toast.success("บันทึกผลการตรวจเรียบร้อย — ไม่พบสิ่งผิดปกติ");
       }
       return result;
-    },
+      });
+      submitLockRef.current = run.catch(() => {});
+      return run;
+   },
     [catalog, meta, setInspections, setWorkOrders, setMeta, toast]
   );
 
@@ -237,8 +272,14 @@ export function AppDataProviderSupabase({ children }) {
       
       const updatedWO = updatedOrders.find(wo => wo.id === woId);
       if (updatedWO) {
-        try { await saveWorkOrder(updatedWO); }
-        catch (error) { console.warn("Supabase work order save failed; local copy retained", error); }
+        enqueueOutbox("work_order", updatedWO);
+        try {
+          const saved = await saveWorkOrder(updatedWO);
+          removeOutbox("work_order", updatedWO.id);
+          if (saved.data?.version) setWorkOrders((list) => list.map((item) => item.id === updatedWO.id ? { ...item, version: saved.data.version } : item));
+        }
+        catch (error) { console.warn("Supabase work order save failed; queued for retry", error); }
+        enqueueNotification({ id: `wo-status:${updatedWO.id}:${updatedWO.status}`, title: "สถานะงานซ่อมเปลี่ยนแปลง", body: `${updatedWO.number} → สถานะ ${updatedWO.status}` });
       }
     },
     [workOrders]
@@ -254,8 +295,13 @@ export function AppDataProviderSupabase({ children }) {
       
       const updatedWO = updatedOrders.find(wo => wo.id === woId);
       if (updatedWO) {
-        try { await saveWorkOrder(updatedWO); }
-        catch (error) { console.warn("Supabase work order save failed; local copy retained", error); }
+        enqueueOutbox("work_order", updatedWO);
+        try {
+          const saved = await saveWorkOrder(updatedWO);
+          removeOutbox("work_order", updatedWO.id);
+          if (saved.data?.version) setWorkOrders((list) => list.map((item) => item.id === updatedWO.id ? { ...item, version: saved.data.version } : item));
+        }
+        catch (error) { console.warn("Supabase work order save failed; queued for retry", error); }
       }
     },
     [workOrders]

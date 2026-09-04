@@ -23,6 +23,7 @@ import { useAppData } from "../../store/AppDataProvider";
 import { Badge } from "../../components/ui/Badge";
 import { fmt } from "../../lib/helpers";
 import { downloadBackup, readBackupFile, applyBackup } from "../../lib/backup";
+import { fetchAuditLogs } from "../../lib/supabaseData";
 
 // 1. Building Manager
 export function BuildingManager() {
@@ -348,6 +349,7 @@ export function SettingsManager({ auth }) {
   const { wipeAll, toast } = useAppData();
   const [oldPin, setOldPin] = useState("");
   const [newPin, setNewPin] = useState("");
+  const [exportingAudit, setExportingAudit] = useState(false);
 
   const handleChangePin = async () => {
     const res = await auth.changePin(oldPin, newPin);
@@ -374,6 +376,25 @@ export function SettingsManager({ auth }) {
       }
     } catch (err) {
       toast.error(err.message);
+    }
+  };
+
+  const exportAudit = async () => {
+    setExportingAudit(true);
+    try {
+      const logs = await fetchAuditLogs();
+      const blob = new Blob([JSON.stringify({ exportedAt: new Date().toISOString(), logs }, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `fsa-audit-log-${new Date().toISOString().slice(0, 10)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success(`ส่งออก Audit Log ${logs.length} รายการแล้ว`);
+    } catch (error) {
+      toast.error(error.message || "ส่งออก Audit Log ไม่สำเร็จ");
+    } finally {
+      setExportingAudit(false);
     }
   };
 
@@ -408,6 +429,14 @@ export function SettingsManager({ auth }) {
             อัปเดตรหัส PIN
           </button>
         </div>
+      </div>
+
+      <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm max-w-lg space-y-3">
+        <h3 className="font-extrabold text-slate-800 flex items-center gap-2"><ShieldCheck className="h-4 w-4 text-indigo-600" /> Audit Trail สำหรับ Compliance</h3>
+        <p className="text-xs text-slate-500">บันทึกว่าใครสร้าง แก้ไข หรือลบข้อมูลสำคัญ เมื่อใด โดยอ่านได้เฉพาะผู้มีสิทธิ์จัดการ</p>
+        <button onClick={exportAudit} disabled={exportingAudit} className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-100 disabled:opacity-50">
+          <Download className="h-4 w-4" /> {exportingAudit ? "กำลังเตรียมไฟล์..." : "Export Audit Log (.json)"}
+        </button>
       </div>
 
       {/* Backup & Restore */}

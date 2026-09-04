@@ -104,7 +104,7 @@ export function createWorkOrderFromInspection(inspection, catalog, opts = {}) {
   });
 
   const total = itemsTotal(woItems);
-  const woNumber = makeWoNumber(counter);
+  const woNumber = opts.workOrderNumber || makeWoNumber(counter, opts.date ? new Date(opts.date) : new Date());
   const building = (catalog?.buildings || []).find((b) => b.id === inspection.buildingId);
 
   const workOrder = {
@@ -130,6 +130,7 @@ export function createWorkOrderFromInspection(inspection, catalog, opts = {}) {
       { at: nowISO(), status: 1, by: inspection.inspector || "-", note: "สร้างจากผลการตรวจอาคาร" },
     ],
     procurement: null,
+    updatedAt: nowISO(),
   };
 
   inspectionRecord.workOrderId = workOrder.id;

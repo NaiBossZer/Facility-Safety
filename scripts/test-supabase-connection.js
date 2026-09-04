@@ -11,6 +11,8 @@ import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY;
+const testEmail = process.env.SUPABASE_TEST_EMAIL;
+const testPassword = process.env.SUPABASE_TEST_PASSWORD;
 
 if (!supabaseUrl || !supabaseAnonKey) {
   console.error('❌ Missing Supabase credentials in .env file');
@@ -23,6 +25,7 @@ async function testConnection() {
   console.log('🚀 Testing Supabase connection...');
   console.log(`📡 URL: ${supabaseUrl}`);
   
+  let failed = false;
   try {
     // Test 1: Check if we can connect to the database
     console.log('\n📋 Test 1: Basic connection...');
@@ -36,6 +39,17 @@ async function testConnection() {
     
     console.log('✅ Connection successful!');
     console.log('📊 System meta:', data);
+
+    if (!testEmail || !testPassword) {
+      console.error('❌ Set SUPABASE_TEST_EMAIL and SUPABASE_TEST_PASSWORD to run authenticated RLS checks');
+      return false;
+    }
+    const { error: authError } = await supabase.auth.signInWithPassword({ email: testEmail, password: testPassword });
+    if (authError) {
+      console.error('❌ Test user login failed:', authError.message);
+      return false;
+    }
+    console.log('✅ Authenticated test user ready');
     
     // Test 2: Check if tables exist and are accessible
     console.log('\n📋 Test 2: Checking table access...');
@@ -47,6 +61,7 @@ async function testConnection() {
       
       if (tableError) {
         console.error(`❌ Cannot access table '${table}':`, tableError.message);
+        failed = true;
       } else {
         console.log(`✅ Table '${table}' accessible (${tableData.length} records)`);
       }
@@ -73,6 +88,7 @@ async function testConnection() {
     
     if (insertError) {
       console.error('❌ Insert failed:', insertError.message);
+      failed = true;
     } else {
       console.log('✅ Insert successful!');
       console.log('📝 Inserted data:', insertData);
@@ -82,8 +98,8 @@ async function testConnection() {
       console.log('🧹 Test data cleaned up');
     }
     
-    console.log('\n🎉 All tests completed successfully!');
-    return true;
+    console.log(failed ? '\n❌ Smoke test completed with failures.' : '\n🎉 All tests completed successfully!');
+    return !failed;
     
   } catch (error) {
     console.error('❌ Test failed with error:', error);

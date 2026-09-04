@@ -5,7 +5,7 @@
 import React, { useState } from "react";
 import {
   Users, UserPlus, Edit2, Trash2, Phone, Mail,
-  Save, RefreshCw, Link2, FileSpreadsheet, X, KeyRound, Eye, EyeOff,
+  Save, RefreshCw, Link2, FileSpreadsheet, X,
 } from "lucide-react";
 import { useAppData } from "../../store/AppDataProvider";
 import { Badge } from "../../components/ui/Badge";
@@ -26,7 +26,7 @@ const ROLE_OPTIONS = [
 const EMPTY_PERSON = {
   name: "", position: "", department: "",
   role: "inspector", phone: "", email: "",
-  isResponsible: false, pin: "1234",
+  isResponsible: false,
 };
 
 export function PersonnelManager() {
@@ -37,7 +37,6 @@ export function PersonnelManager() {
 
   const [editingPerson, setEditingPerson] = useState(null);
   const [showModal, setShowModal]         = useState(false);
-  const [showPin, setShowPin]             = useState(false);
   const [appScriptUrl, setUrl]            = useState(() => getAppScriptUrl());
   const [showCodeSample, setShowCodeSample] = useState(false);
   const [syncing, setSyncing]             = useState(false);
@@ -52,21 +51,17 @@ export function PersonnelManager() {
   const handleSavePerson = () => {
     try {
       if (!editingPerson?.name?.trim()) return toast.error("กรุณากรอกชื่อ-นามสกุล");
-      const pinVal = String(editingPerson.pin ?? "1234");
-      if (!/^\d{4,8}$/.test(pinVal)) return toast.error("รหัสพนักงานต้องเป็นตัวเลข 4-8 หลัก");
-
       let updated;
       if (editingPerson.id) {
-        updated = personnel.map((p) => (p.id === editingPerson.id ? { ...editingPerson, pin: pinVal } : p));
+        updated = personnel.map((p) => (p.id === editingPerson.id ? { ...editingPerson } : p));
         toast.success("อัปเดตข้อมูลบุคลากรเรียบร้อย");
       } else {
-        updated = [{ ...editingPerson, pin: pinVal, id: `per_${Date.now()}` }, ...personnel];
+        updated = [{ ...editingPerson, id: `per_${Date.now()}` }, ...personnel];
         toast.success("เพิ่มบุคลากรเรียบร้อย");
       }
       savePersonnelList(updated);
       setShowModal(false);
       setEditingPerson(null);
-      setShowPin(false);
     } catch (err) {
       console.error("[PersonnelManager] handleSavePerson ล้มเหลว:", err);
       toast.error("เกิดข้อผิดพลาดในการบันทึกข้อมูลบุคลากร");
@@ -93,9 +88,9 @@ export function PersonnelManager() {
     }
   };
 
-  const openEdit = (p) => { setEditingPerson({ ...p }); setShowPin(false); setShowModal(true); };
-  const openNew  = ()  => { setEditingPerson({ ...EMPTY_PERSON }); setShowPin(false); setShowModal(true); };
-  const closeModal = () => { setShowModal(false); setEditingPerson(null); setShowPin(false); };
+  const openEdit = (p) => { setEditingPerson({ ...p }); setShowModal(true); };
+  const openNew  = ()  => { setEditingPerson({ ...EMPTY_PERSON }); setShowModal(true); };
+  const closeModal = () => { setShowModal(false); setEditingPerson(null); };
 
   return (
     <div className="space-y-6 animate-fade">
@@ -164,10 +159,6 @@ export function PersonnelManager() {
                   <div className="mt-2 flex flex-wrap items-center gap-x-3 text-[11px] text-slate-500">
                     <span className="flex items-center gap-1"><Phone className="h-3 w-3" /> {p.phone || "-"}</span>
                     <span className="flex items-center gap-1"><Mail className="h-3 w-3" /> {p.email || "-"}</span>
-                    <span className="flex items-center gap-1 text-indigo-500 font-semibold">
-                      <KeyRound className="h-3 w-3" />
-                      {p.pin ? `รหัส: ${"•".repeat(Math.min(p.pin.length, 6))}` : "ใช้รหัสเริ่มต้น (1234)"}
-                    </span>
                   </div>
                 </div>
               </div>
@@ -238,25 +229,8 @@ export function PersonnelManager() {
                 </label>
               </div>
 
-              {/* PIN */}
-              <div className="rounded-xl border border-indigo-100 bg-indigo-50 p-3">
-                <span className="font-bold text-indigo-700 flex items-center gap-1.5">
-                  <KeyRound className="h-3.5 w-3.5" /> รหัสพนักงาน (ใช้เข้าสู่ระบบ)
-                </span>
-                <p className="mt-0.5 mb-2 text-[11px] text-indigo-500">ตัวเลข 4-8 หลัก · รหัสเริ่มต้น: 1234</p>
-                <div className="relative">
-                  <input
-                    type={showPin ? "text" : "password"}
-                    value={editingPerson.pin ?? "1234"}
-                    onChange={(e) => setEditingPerson({ ...editingPerson, pin: e.target.value })}
-                    placeholder="1234" maxLength={8}
-                    className="w-full rounded-xl border border-indigo-200 bg-white p-2.5 pr-10 outline-none focus:border-indigo-500 font-mono tracking-widest"
-                  />
-                  <button type="button" onClick={() => setShowPin((v) => !v)}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-indigo-600">
-                    {showPin ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
-                </div>
+              <div className="rounded-xl border border-emerald-100 bg-emerald-50 p-3 text-[11px] text-emerald-700">
+                การเข้าสู่ระบบใช้ Supabase Auth เท่านั้น ระบบจะไม่เก็บ Password หรือ PIN ใน catalog/localStorage
               </div>
 
               <div className="flex items-center gap-2 pt-1">

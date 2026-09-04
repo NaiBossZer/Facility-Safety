@@ -3,8 +3,8 @@
 // เขียน/อ่านข้อมูลจาก Supabase แทน localStorage
 // ============================================================
 import { supabase } from "./supabaseClient";
-const fromDbWorkOrder=w=>({...w,buildingId:w.building_id,buildingName:w.building_name,buildingCode:w.building_code,createdAt:w.created_at,catalogVersionAt:w.catalog_version_at,sourceItemIds:w.source_item_ids||[],history:w.history||[],procurement:w.procurement??null,photos:w.photos||[],items:w.items||[]});
-const toDbWorkOrder=w=>({id:w.id,number:w.number,building_id:w.buildingId,building_name:w.buildingName||"-",building_code:w.buildingCode||"-",title:w.title,reporter:w.reporter||"-",reason:w.reason||null,created_at:w.createdAt,date:w.date,status:Number(w.status??1),priority:w.priority||"normal",findings:w.findings||[],source_item_ids:w.sourceItemIds||[],items:w.items||[],total:Number(w.total??0),photos:w.photos||[],catalog_version_at:w.catalogVersionAt??null,history:w.history||[],procurement:w.procurement??null});
+const fromDbWorkOrder=w=>({...w,buildingId:w.building_id,buildingName:w.building_name,buildingCode:w.building_code,createdAt:w.created_at,updatedAt:w.updated_at,catalogVersionAt:w.catalog_version_at,sourceItemIds:w.source_item_ids||[],history:w.history||[],procurement:w.procurement??null,photos:w.photos||[],items:w.items||[],version:Number(w.version ?? 1)});
+const toDbWorkOrder=w=>({id:w.id,number:w.number,building_id:w.buildingId,building_name:w.buildingName||"-",building_code:w.buildingCode||"-",title:w.title,reporter:w.reporter||"-",reason:w.reason||null,created_at:w.createdAt,date:w.date,status:Number(w.status??1),priority:w.priority||"normal",findings:w.findings||[],source_item_ids:w.sourceItemIds||[],items:w.items||[],total:Number(w.total??0),photos:w.photos||[],catalog_version_at:w.catalogVersionAt??null,history:w.history||[],procurement:w.procurement??null,updated_at:w.updatedAt||new Date().toISOString()});
 const fromDbInspection=i=>({...i,buildingId:i.building_id,createdAt:i.created_at,workOrderId:i.work_order_id,notes:i.notes||{},results:i.results||{},photos:i.photos||[],summary:i.summary||{}});
 const toDbInspection=i=>({id:i.id,building_id:i.buildingId,inspector:i.inspector||"-",date:i.date,created_at:i.createdAt,results:i.results||{},notes:i.notes||{},photos:i.photos||[],summary:i.summary||{},work_order_id:i.workOrderId||null});
 const mapCategory=x=>({...x,order:x.order,active:x.active});
@@ -13,7 +13,7 @@ const mapBuilding=x=>({...x,code:x.code,order:x.order,active:x.active});
 const mapVendor=x=>({...x,factor:Number(x.factor??1),order:x.order,active:x.active});
 const mapBudget=x=>x?({fiscalYear:x.fiscal_year,total:Number(x.total??0),id:x.id}):{fiscalYear:2569,total:2500000};
 const mapPersonnel=x=>({...x,isResponsible:x.is_responsible});
-const toDbCatalog=c=>({categories:(c.categories||[]).map(x=>({id:x.id,track:x.track,name:x.name,color:x.color,icon:x.icon,order:x.order??0,active:x.active??true})),items:(c.items||[]).map(x=>({id:x.id,category_id:x.categoryId,label:x.label,standard:x.standard||null,frequency:x.frequency||null,critical:Boolean(x.critical),parts:x.parts||[],order:x.order??0,active:x.active??true})),buildings:(c.buildings||[]).map(x=>({id:x.id,name:x.name,code:x.code,detail:x.detail||null,order:x.order??0,active:x.active??true})),vendors:(c.vendors||[]).map(x=>({id:x.id,name:x.name,tax:x.tax||null,tel:x.tel||null,factor:x.factor??1,order:x.order??0,active:x.active??true})),budget:c.budget?{id:c.budget.id,fiscal_year:c.budget.fiscalYear,total:c.budget.total}:{fiscal_year:2569,total:2500000},personnel:(c.personnel||[]).map(x=>({id:x.id,name:x.name,position:x.position||null,department:x.department||null,role:x.role,phone:x.phone||null,email:x.email||null,is_responsible:Boolean(x.isResponsible),pin:x.pin,active:x.active??true}))});
+const toDbCatalog=c=>({categories:(c.categories||[]).map(x=>({id:x.id,track:x.track,name:x.name,color:x.color,icon:x.icon,order:x.order??0,active:x.active??true})),items:(c.items||[]).map(x=>({id:x.id,category_id:x.categoryId,label:x.label,standard:x.standard||null,frequency:x.frequency||null,critical:Boolean(x.critical),parts:x.parts||[],order:x.order??0,active:x.active??true})),buildings:(c.buildings||[]).map(x=>({id:x.id,name:x.name,code:x.code,detail:x.detail||null,order:x.order??0,active:x.active??true})),vendors:(c.vendors||[]).map(x=>({id:x.id,name:x.name,tax:x.tax||null,tel:x.tel||null,factor:x.factor??1,order:x.order??0,active:x.active??true})),budget:c.budget?{id:c.budget.id,fiscal_year:c.budget.fiscalYear,total:c.budget.total}:{fiscal_year:2569,total:2500000},personnel:(c.personnel||[]).map(x=>({id:x.id,name:x.name,position:x.position||null,department:x.department||null,role:x.role,phone:x.phone||null,email:x.email||null,is_responsible:Boolean(x.isResponsible),active:x.active??true}))});
 
 
 // ============================================================
@@ -131,11 +131,24 @@ export async function fetchWorkOrders() {
 
 export async function saveWorkOrder(workOrder) {
   try {
-    const { data, error } = await supabase
-      .from('work_orders')
-      .upsert(toDbWorkOrder(workOrder))
-      .select()
-      .single();
+    const { data: { user } } = await supabase.auth.getUser();
+    const payload = { ...toDbWorkOrder(workOrder), ...(user ? { created_by: workOrder.created_by || user.id, updated_by: user.id } : {}) };
+    delete payload.version;
+    const { data: existing, error: findError } = await supabase.from('work_orders').select('version').eq('id', workOrder.id).maybeSingle();
+    if (findError) throw findError;
+    let data;
+    let error;
+    if (existing) {
+      const expectedVersion = workOrder.version > 0 ? Number(workOrder.version) : Number(existing.version || 1);
+      const result = await supabase.from('work_orders').update({ ...payload, version: expectedVersion + 1 }).eq('id', workOrder.id).eq('version', expectedVersion).select().single();
+      data = result.data;
+      error = result.error;
+      if (!data && !error) { error = Object.assign(new Error('Work order was changed by another user'), { code: 'CONFLICT' }); }
+    } else {
+      const result = await supabase.from('work_orders').insert({ ...payload, version: 1 }).select().single();
+      data = result.data;
+      error = result.error;
+    }
 
     if (error) throw error;
     return { ok: true, data };
@@ -143,6 +156,12 @@ export async function saveWorkOrder(workOrder) {
     console.error('Error saving work order:', error);
     throw error;
   }
+}
+
+export async function fetchWorkOrderById(id) {
+  const { data, error } = await supabase.from('work_orders').select('*').eq('id', id).maybeSingle();
+  if (error) throw error;
+  return data ? fromDbWorkOrder(data) : null;
 }
 
 export async function deleteWorkOrder(id) {
@@ -181,9 +200,11 @@ export async function fetchInspections() {
 
 export async function saveInspection(inspection) {
   try {
+    const { data: { user } } = await supabase.auth.getUser();
+    const payload = { ...toDbInspection(inspection), ...(user ? { created_by: inspection.created_by || user.id, updated_by: user.id } : {}) };
     const { data, error } = await supabase
       .from('inspections')
-      .upsert(toDbInspection(inspection))
+      .upsert(payload)
       .select()
       .single();
 
@@ -231,12 +252,40 @@ export async function updateSystemMeta(updates) {
   }
 }
 
+/** Atomically reserves a globally unique WO number inside a DB transaction. */
+export async function reserveWorkOrderNumber(date) {
+  const { data, error } = await supabase.rpc('reserve_work_order_number', {
+    p_date: date || new Date().toISOString().slice(0, 10),
+  });
+  if (error) throw error;
+  const row = Array.isArray(data) ? data[0] : data;
+  if (!row?.counter || !row?.work_order_number) throw new Error('Invalid counter response');
+  return { counter: Number(row.counter), number: row.work_order_number };
+}
+
+export async function fetchAuditLogs(limit = 500) {
+  const { data, error } = await supabase
+    .from('audit_logs').select('*').order('created_at', { ascending: false }).limit(limit);
+  if (error) throw error;
+  return data || [];
+}
+
+export async function retryNotificationJob(id) {
+  const { data, error } = await supabase.rpc('retry_notification_job', { p_job_id: id });
+  if (error) throw error;
+  return data;
+}
+
 // ============================================================
 // USER PREFERENCES OPERATIONS
 // ============================================================
 
 export async function fetchUserPreferences(userId = 'default') {
   try {
+    if (userId === 'default') {
+      const { data: { user } } = await supabase.auth.getUser();
+      userId = user?.id || userId;
+    }
     const { data, error } = await supabase
       .from('user_preferences')
       .select('*')
@@ -264,6 +313,10 @@ export async function fetchUserPreferences(userId = 'default') {
 
 export async function saveUserPreferences(prefs) {
   try {
+    if (!prefs.user_id || prefs.user_id === 'default') {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) prefs = { ...prefs, user_id: user.id };
+    }
     const { data: existing, error: findError } = await supabase
       .from('user_preferences')
       .select('id')

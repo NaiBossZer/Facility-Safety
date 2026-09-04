@@ -283,15 +283,14 @@ export function InspectionPage({ currentUser }) {
     }));
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (answered === 0) {
       toast.error("กรุณาเลือกสถานะอย่างน้อย 1 รายการก่อนส่งรายงาน");
       return;
     }
 
     setSending(true);
-    setTimeout(() => {
-      try {
+    try {
         const inspectorName = currentUser
           ? `${currentUser.name} (${currentUser.position})`
           : "ไม่ระบุผู้ตรวจ";
@@ -303,7 +302,7 @@ export function InspectionPage({ currentUser }) {
           url: typeof p === "string" ? p : p?.url || p?.dataUrl || "",
         }));
 
-        const res = submitInspection({
+        const res = await submitInspection({
           buildingId,
           track: activeTrack,
           inspector: inspectorName,
@@ -316,16 +315,15 @@ export function InspectionPage({ currentUser }) {
         setResults({});
         setNote("");
         setPhotos([]);
-        setSending(false);
         if (res?.workOrder) {
           setPage("workorder");
         }
-      } catch (err) {
-        console.error("[InspectionPage] submitInspection ล้มเหลว:", err);
-        toast.error("เกิดข้อผิดพลาดในการบันทึก — กรุณาลองใหม่อีกครั้ง");
-        setSending(false);
-      }
-    }, 600);
+    } catch (err) {
+      console.error("[InspectionPage] submitInspection ล้มเหลว:", err);
+      toast.error("เกิดข้อผิดพลาดในการบันทึก — กรุณาลองใหม่อีกครั้ง");
+    } finally {
+      setSending(false);
+    }
   };
 
   return (

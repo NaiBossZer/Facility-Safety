@@ -30,6 +30,7 @@ export default function App() {
   if (!currentUser) {
     return <LoginPage onLogin={login} />;
   }
+  const canManage = ["admin", "dean", "deputy_dean", "finance_head", "section_head"].includes(currentUser.role);
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans text-slate-800 antialiased">
@@ -79,7 +80,8 @@ export default function App() {
           {page === "workorder" && <WorkOrderPage />}
           {page === "procurement" && <ProcurementPage />}
           {page === "reports" && <ReportsPage />}
-          {page === "admin" && <AdminPage onExit={() => setPage("dashboard")} />}
+          {page === "admin" && canManage && <AdminPage onExit={() => setPage("dashboard")} />}
+          {page === "admin" && !canManage && <div className="rounded-2xl border border-red-200 bg-red-50 p-6 text-sm font-semibold text-red-700">คุณไม่มีสิทธิ์เข้าถึง Admin Console</div>}
         </main>
       </div>
 

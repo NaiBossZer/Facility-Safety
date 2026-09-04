@@ -12,7 +12,7 @@ await page.waitForTimeout(500);
 await page.getByRole('button', { name: /Admin Console/ }).click();
 await page.waitForTimeout(400);
 const before = (await page.locator('main').innerText()).slice(0, 700);
-for (const digit of '112233') {
+for (const digit of '839174') {
   await page.getByRole('button', { name: digit, exact: true }).click();
   await page.waitForTimeout(120);
 }
@@ -29,7 +29,7 @@ const afterSave = await page.locator('main').first().innerText();
 await page.reload({ waitUntil: 'networkidle' });
 await page.waitForTimeout(800);
 if (await page.getByRole('button', { name: '1', exact: true }).count()) {
-  for (const digit of '112233') {
+  for (const digit of '839174') {
     await page.getByRole('button', { name: digit, exact: true }).click();
     await page.waitForTimeout(120);
   }
@@ -48,7 +48,7 @@ const itemAfterSave = await page.locator('main').first().innerText();
 await page.reload({ waitUntil: 'networkidle' });
 await page.waitForTimeout(800);
 if (await page.getByRole('button', { name: '1', exact: true }).count()) {
-  for (const digit of '112233') {
+  for (const digit of '839174') {
     await page.getByRole('button', { name: digit, exact: true }).click();
     await page.waitForTimeout(120);
   }

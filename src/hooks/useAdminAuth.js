@@ -7,7 +7,8 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { KEYS, readJSON, writeJSON, removeKey } from "../lib/storage";
 import { nowISO } from "../lib/helpers";
 
-export const DEFAULT_PIN = "112233";
+// Deliberately non-sequential bootstrap PIN. Admin should change it immediately.
+export const DEFAULT_PIN = "839174";
 const SESSION_MINUTES = 30;
 const MAX_ATTEMPTS = 5;
 const LOCKOUT_MINUTES = 5;
@@ -42,19 +43,22 @@ function loadAuth() {
 export function useAdminAuth() {
   const [record, setRecord] = useState(() => loadAuth());
   const [unlocked, setUnlocked] = useState(false);
-  const [attempts, setAttempts] = useState(0);
-  const [lockedUntil, setLockedUntil] = useState(null);
-  const [initializing, setInitializing] = useState(!loadAuth());
+  const [attempts, setAttempts] = useState(() => loadAuth()?.failedAttempts || 0);
+  const [lockedUntil, setLockedUntil] = useState(() => loadAuth()?.lockedUntil || null);
+  const [initializing, setInitializing] = useState(() => {
+    const auth = loadAuth();
+    return !auth || (auth.isDefault && auth.defaultVersion !== 2);
+  });
   const timerRef = useRef(null);
 
   // ---- ตั้ง PIN เริ่มต้นครั้งแรก ----
   useEffect(() => {
-    if (record) return;
+    if (record && !(record.isDefault && record.defaultVersion !== 2)) return;
     let cancelled = false;
     (async () => {
       const hash = await hashPin(DEFAULT_PIN);
       if (cancelled) return;
-      const rec = { hash, isDefault: true, createdAt: nowISO(), updatedAt: nowISO() };
+      const rec = { hash, isDefault: true, defaultVersion: 2, failedAttempts: 0, lockedUntil: null, createdAt: record?.createdAt || nowISO(), updatedAt: nowISO() };
       writeJSON(KEYS.auth, rec);
       setRecord(rec);
       setInitializing(false);
@@ -87,6 +91,9 @@ export function useAdminAuth() {
         setUnlocked(true);
         setAttempts(0);
         setLockedUntil(null);
+        const clean = { ...current, failedAttempts: 0, lockedUntil: null, updatedAt: nowISO() };
+        writeJSON(KEYS.auth, clean);
+        setRecord(clean);
         startSessionTimer();
         return { ok: true, error: null, isDefault: Boolean(current.isDefault) };
       }
@@ -94,10 +101,13 @@ export function useAdminAuth() {
       const next = attempts + 1;
       setAttempts(next);
       if (next >= MAX_ATTEMPTS) {
-        setLockedUntil(Date.now() + LOCKOUT_MINUTES * 60 * 1000);
+        const until = Date.now() + LOCKOUT_MINUTES * 60 * 1000;
+        setLockedUntil(until);
         setAttempts(0);
+        writeJSON(KEYS.auth, { ...current, failedAttempts: 0, lockedUntil: until, updatedAt: nowISO() });
         return { ok: false, error: `ใส่ผิด ${MAX_ATTEMPTS} ครั้ง ระบบล็อก ${LOCKOUT_MINUTES} นาที` };
       }
+      writeJSON(KEYS.auth, { ...current, failedAttempts: next, lockedUntil: null, updatedAt: nowISO() });
       return { ok: false, error: `PIN ไม่ถูกต้อง (เหลืออีก ${MAX_ATTEMPTS - next} ครั้ง)` };
     },
     [record, attempts, isLocked, lockedUntil, startSessionTimer]

@@ -4,6 +4,7 @@
 // ============================================================
 import React from "react";
 import { AlertTriangle, RefreshCw, Home, ShieldAlert, Trash2 } from "lucide-react";
+import { clearNamespace } from "../../lib/storage";
 
 export class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -27,10 +28,9 @@ export class ErrorBoundary extends React.Component {
 
   handleClearCacheAndReset = () => {
     try {
-      // สงวน userSession ไว้ ถ้ามี
-      const session = localStorage.getItem("fsa:v2:userSession");
-      localStorage.clear();
-      if (session) localStorage.setItem("fsa:v2:userSession", session);
+      // Clear only this app's non-auth cache. Never clear other applications'
+      // storage or the encrypted Supabase Auth session.
+      clearNamespace();
     } catch {
       /* ignore */
     }

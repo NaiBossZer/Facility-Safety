@@ -55,7 +55,7 @@ export function Sidebar({ menuOpen, setMenuOpen, currentUser, onLogout }) {
 
         {/* Navigation Links */}
         <nav className="flex-1 space-y-1.5 p-3">
-          {NAV_ITEMS.map((n) => {
+          {NAV_ITEMS.filter((n) => n.id !== "admin" || ["admin", "dean", "deputy_dean", "finance_head", "section_head"].includes(currentUser?.role)).map((n) => {
             const Icon = n.icon;
             const on = page === n.id;
             return (
@@ -137,7 +137,7 @@ export function Sidebar({ menuOpen, setMenuOpen, currentUser, onLogout }) {
               </button>
             </div>
             <div className="space-y-1.5">
-              {NAV_ITEMS.map((n) => {
+              {NAV_ITEMS.filter((n) => n.id !== "admin" || ["admin", "dean", "deputy_dean", "finance_head", "section_head"].includes(currentUser?.role)).map((n) => {
                 const Icon = n.icon;
                 const on = page === n.id;
                 return (

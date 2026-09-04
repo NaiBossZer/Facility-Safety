@@ -1,5 +1,5 @@
 // ============================================================
-// PinGate.jsx — Secure Numeric PIN Entry Modal (Default PIN: 112233)
+// PinGate.jsx — Secure Numeric PIN Entry Modal
 // ============================================================
 import React, { useState } from "react";
 import { Lock, ShieldCheck, AlertCircle, KeyRound, ArrowLeft } from "lucide-react";
@@ -47,7 +47,7 @@ export function PinGate({ auth, onCancel }) {
         <h3 className="mt-4 text-xl font-extrabold text-slate-800">ระบบจัดการผู้ดูแลระบบ (Admin)</h3>
         <p className="mt-1 text-xs text-slate-400">
           กรุณากรอกรหัส PIN 6 หลักเพื่อเข้าถึงระบบจัดการ
-          {auth.isDefaultPin && <span className="block mt-1 text-amber-600 font-semibold">(PIN เริ่มต้น: 112233)</span>}
+          {auth.isDefaultPin && <span className="block mt-1 text-amber-600 font-semibold">(กรุณาเปลี่ยน PIN เริ่มต้นทันทีหลังเข้าสู่ระบบ)</span>}
         </p>
 
         {/* PIN Dots display */}

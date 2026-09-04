@@ -330,7 +330,7 @@ export function buildDefaultCatalog() {
       total: 2500000,
     },
 
-    // รายชื่อบุคลากร — ใช้ Login เข้าระบบ (pin เริ่มต้น 1234)
+    // รายชื่อบุคลากร — ใช้ Supabase Auth (ห้ามเก็บ password/PIN ใน catalog)
     personnel: [
       {
         id: "per_1",
@@ -341,7 +341,6 @@ export function buildDefaultCatalog() {
         phone: "081-234-5678",
         email: "somchai.tru@mahidol.edu",
         isResponsible: true,
-        pin: "1234",
       },
       {
         id: "per_2",
@@ -352,7 +351,6 @@ export function buildDefaultCatalog() {
         phone: "089-987-6543",
         email: "prasert.man@mahidol.edu",
         isResponsible: true,
-        pin: "1234",
       },
       {
         id: "per_3",
@@ -363,7 +361,6 @@ export function buildDefaultCatalog() {
         phone: "054-234-000",
         email: "nitad.sam@mahidol.edu",
         isResponsible: false,
-        pin: "1234",
       },
     ],
   };
