@@ -21,9 +21,12 @@ import { AdminPage } from "./pages/admin/AdminPage";
 export default function App() {
   const { page, setPage, migration } = useAppData();
   const [menuOpen, setMenuOpen] = useState(false);
-  const { currentUser, login, logout } = useAuth();
+  const { currentUser, login, logout, loading } = useAuth();
 
   // ถ้ายังไม่ได้ login → แสดงหน้า Login
+  if (loading) {
+    return <div className="flex min-h-screen items-center justify-center bg-slate-50 text-sm text-slate-500">กำลังตรวจสอบสิทธิ์…</div>;
+  }
   if (!currentUser) {
     return <LoginPage onLogin={login} />;
   }

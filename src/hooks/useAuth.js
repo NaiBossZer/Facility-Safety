@@ -1,79 +1,40 @@
-﻿// ============================================================
-// useAuth.js — Session บุคลากร (Soft Gate ไม่ใช่ production security)
-// เหมือน useAdminAuth แต่สำหรับ user ทั่วไปเข้าแอป
-// ============================================================
-import { useState, useCallback } from "react";
-import { writeJSON, removeKey } from "../lib/storage";
-
-const AUTH_USER_KEY = "fsa:v2:userSession";
-const SESSION_MINUTES = 480; // 8 ชั่วโมง (วันทำงาน)
-
-/** โหลด session ที่ยัง valid */
-function loadSession() {
-  try {
-    const raw = window.localStorage?.getItem(AUTH_USER_KEY);
-    if (!raw) return null;
-    const s = JSON.parse(raw);
-    if (!s?.expiresAt) return null;
-    if (Date.now() > s.expiresAt) {
-      window.localStorage.removeItem(AUTH_USER_KEY);
-      return null;
-    }
-    return s;
-  } catch {
-    return null;
-  }
-}
+import { useCallback, useEffect, useState } from "react";
+import { supabase } from "../lib/supabaseClient";
 
 export function useAuth() {
-  const [session, setSession] = useState(() => loadSession());
+  const [session, setSession] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  /** currentUser: { id, name, position, department, role } | null */
-  const currentUser = session?.user ?? null;
-
-  /**
-   * login(personnelId, pin, personnelList)
-   * personnelList มาจาก useAppData().catalog.personnel โดยตรง
-   * ไม่อ่านจาก localStorage เพื่อป้องกันปัญหา catalog ยังไม่ถูก flush
-   */
-  const login = useCallback((personnelId, pin, personnelList = []) => {
-    if (!personnelId || !pin) {
-      return { ok: false, error: "กรุณากรอกข้อมูลให้ครบ" };
-    }
-
-    const person = personnelList.find((p) => p.id === personnelId);
-    if (!person) {
-      return { ok: false, error: "ไม่พบข้อมูลบุคลากรนี้ในระบบ" };
-    }
-
-    const correctPin = person.pin ?? "1234";
-    if (String(pin) !== String(correctPin)) {
-      return { ok: false, error: "รหัสพนักงานไม่ถูกต้อง" };
-    }
-
-    const user = {
-      id: person.id,
-      name: person.name,
-      position: person.position,
-      department: person.department,
-      role: person.role,
-    };
-    const newSession = {
-      user,
-      loginAt: Date.now(),
-      expiresAt: Date.now() + SESSION_MINUTES * 60 * 1000,
-    };
-    writeJSON(AUTH_USER_KEY, newSession);
-    setSession(newSession);
-    return { ok: true, user };
+  useEffect(() => {
+    let mounted = true;
+    supabase.auth.getSession().then(({ data }) => {
+      if (mounted) { setSession(data.session); setLoading(false); }
+    });
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      if (mounted) setSession(nextSession);
+    });
+    return () => { mounted = false; listener.subscription.unsubscribe(); };
   }, []);
 
-  const logout = useCallback(() => {
-    removeKey(AUTH_USER_KEY);
-    setSession(null);
+  const login = useCallback(async (email, password) => {
+    if (!email || !password) return { ok: false, error: "กรุณากรอก Email และรหัสผ่าน" };
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) return { ok: false, error: "Email หรือรหัสผ่านไม่ถูกต้อง" };
+    setSession(data.session);
+    return { ok: true, user: data.user };
   }, []);
 
-  return { currentUser, login, logout };
+  const logout = useCallback(() => { void supabase.auth.signOut(); setSession(null); }, []);
+  const metadata = session?.user?.user_metadata || {};
+  const currentUser = session?.user ? {
+    id: session.user.id,
+    email: session.user.email,
+    name: metadata.full_name || session.user.email,
+    position: metadata.position || "บุคลากร",
+    department: metadata.department || "งานพันธกิจเพื่อสังคม",
+    role: metadata.role || "staff",
+  } : null;
+  return { currentUser, login, logout, loading };
 }
 
 export default useAuth;
