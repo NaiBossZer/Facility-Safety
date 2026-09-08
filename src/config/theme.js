@@ -10,38 +10,52 @@ import {
 } from "lucide-react";
 
 export const BRAND = {
-  name: "มหาวิทยาลัยมหิดล วิทยาเขตลำปาง",
-  subName: "Mahidol University Lampang Campus",
-  primary: "#002D62",   // Deep Royal Blue
-  secondary: "#F2A900", // Bright Gold / Yellow
-  accentGreen: "#16A34A", // Smart Farm Emerald
+  name: "งานพันธกิจเพื่อสังคม",
+  faculty: "คณะสิ่งแวดล้อมและทรัพยากรศาสตร์",
+  university: "มหาวิทยาลัยมหิดล (วิทยาเขตลำปาง)",
+  fullName: "งานพันธกิจเพื่อสังคม คณะสิ่งแวดล้อมและทรัพยากรศาสตร์ มหาวิทยาลัยมหิดล",
+  primary: "#123B63",     // Brand Navy (Header, Heading, Nav)
+  darkNavy: "#0e2b42",    // Topbar Dark Navy
+  secondary: "#D6A84F",   // Northern Gold (Highlight, Badge, Accent)
+  accentBlue: "#1677A8",  // Brand Blue (Buttons, Focus, Link)
+  terracotta: "#C66B4F",  // Local Terracotta (Community accent)
+  leafGreen: "#5F8D62",   // Leaf Green (Eco, Agriculture, Done)
+  surfaceWarm: "#F8F6F0", // Warm content canvas
 };
 
-/** ชุดสี preset สอดคล้องกับแบรนด์ */
+/** ชุดสี preset สอดคล้องกับ Mahidol Lampang Portal Design System */
 export const COLOR_PRESET = {
   mahidol: {
-    key: "mahidol", label: "น้ำเงินมหิดล",
-    solid: "bg-[#002D62]", solidHover: "hover:bg-[#001f44]",
-    soft: "bg-[#002D62]/10", softText: "text-[#002D62]",
-    ring: "ring-[#002D62]/20", border: "border-[#002D62]/20",
-    text: "text-[#002D62]", dot: "bg-[#002D62]",
-    gradient: "from-[#002D62] to-[#001733]",
+    key: "mahidol", label: "น้ำเงินมหิดล (Brand Navy)",
+    solid: "bg-[#123B63]", solidHover: "hover:bg-[#0e2b42]",
+    soft: "bg-[#123B63]/10", softText: "text-[#123B63]",
+    ring: "ring-[#123B63]/20", border: "border-[#123B63]/20",
+    text: "text-[#123B63]", dot: "bg-[#123B63]",
+    gradient: "from-[#123B63] via-[#0e2b42] to-slate-900",
   },
   gold: {
-    key: "gold", label: "ทองอร่าม",
-    solid: "bg-[#F2A900]", solidHover: "hover:bg-[#d99700]",
-    soft: "bg-[#F2A900]/15", softText: "text-[#b37d00]",
-    ring: "ring-[#F2A900]/30", border: "border-[#F2A900]/30",
-    text: "text-[#b37d00]", dot: "bg-[#F2A900]",
-    gradient: "from-[#F2A900] to-[#d99700]",
+    key: "gold", label: "ทองล้านนา (Northern Gold)",
+    solid: "bg-[#D6A84F]", solidHover: "hover:bg-[#b88c3a]",
+    soft: "bg-[#D6A84F]/15", softText: "text-[#8a6519]",
+    ring: "ring-[#D6A84F]/30", border: "border-[#D6A84F]/30",
+    text: "text-[#8a6519]", dot: "bg-[#D6A84F]",
+    gradient: "from-[#D6A84F] to-[#b88c3a]",
+  },
+  terracotta: {
+    key: "terracotta", label: "ดินเผาพื้นถิ่น (Local Terracotta)",
+    solid: "bg-[#C66B4F]", solidHover: "hover:bg-[#a65339]",
+    soft: "bg-[#C66B4F]/15", softText: "text-[#9e462d]",
+    ring: "ring-[#C66B4F]/30", border: "border-[#C66B4F]/30",
+    text: "text-[#C66B4F]", dot: "bg-[#C66B4F]",
+    gradient: "from-[#C66B4F] to-[#a65339]",
   },
   farm: {
-    key: "farm", label: "เขียวเกษตรอัจฉริยะ",
-    solid: "bg-[#16A34A]", solidHover: "hover:bg-[#15803d]",
-    soft: "bg-[#16A34A]/10", softText: "text-[#16A34A]",
-    ring: "ring-[#16A34A]/20", border: "border-[#16A34A]/20",
-    text: "text-[#16A34A]", dot: "bg-[#16A34A]",
-    gradient: "from-[#16A34A] to-[#15803d]",
+    key: "farm", label: "เขียวใบไม้ (Leaf Green)",
+    solid: "bg-[#5F8D62]", solidHover: "hover:bg-[#4a734d]",
+    soft: "bg-[#5F8D62]/15", softText: "text-[#3b5e3e]",
+    ring: "ring-[#5F8D62]/20", border: "border-[#5F8D62]/20",
+    text: "text-[#5F8D62]", dot: "bg-[#5F8D62]",
+    gradient: "from-[#5F8D62] to-[#4a734d]",
   },
   red: {
     key: "red", label: "แดงเตือนภัย",

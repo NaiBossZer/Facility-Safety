@@ -30,6 +30,13 @@ import {
   INITIAL_MOWER_TRANSACTIONS,
   INITIAL_FUEL_PLANS,
 } from "../data/fuelData";
+import { INITIAL_ASSETS } from "../data/assetData";
+import {
+  INITIAL_AUDIT_LOGS,
+  buildAuditEntry,
+  AUDIT_MODULES,
+  AUDIT_ACTIONS,
+} from "../lib/auditService";
 
 const LOCAL_STORAGE_KEYS = {
   catalog: "fsa:v2:catalog",
@@ -42,6 +49,8 @@ const LOCAL_STORAGE_KEYS = {
   fuelTrips: "fsa:v2:fuel_trips",
   fuelRefuel: "fsa:v2:fuel_refuel",
   fuelPlans: "fsa:v2:fuel_plans",
+  assets: "fsa:v2:assets",
+  auditLogs: "fsa:v2:audit_logs",
 };
 
 const AppDataContext = createContext(null);
@@ -62,6 +71,10 @@ export function AppDataProviderSupabase({ children }) {
   const [fuelVehicleTrips, setFuelVehicleTrips] = useState(() => readJSON(LOCAL_STORAGE_KEYS.fuelTrips) || INITIAL_VEHICLE_TRIPS);
   const [fuelRefuelLogs, setFuelRefuelLogs] = useState(() => readJSON(LOCAL_STORAGE_KEYS.fuelRefuel) || INITIAL_REFUEL_LOGS);
   const [fuelPlans, setFuelPlans] = useState(() => readJSON(LOCAL_STORAGE_KEYS.fuelPlans) || INITIAL_FUEL_PLANS);
+
+  // Master Assets & Audit Trail states
+  const [assets, setAssets] = useState(() => readJSON(LOCAL_STORAGE_KEYS.assets) || INITIAL_ASSETS);
+  const [auditLogs, setAuditLogs] = useState(() => readJSON(LOCAL_STORAGE_KEYS.auditLogs) || INITIAL_AUDIT_LOGS);
   
   // Loading states
   const [loading, setLoading] = useState(true);
@@ -383,12 +396,158 @@ export function AppDataProviderSupabase({ children }) {
     window.location.reload();
   }, []);
 
+  // ---------- AUDIT TRAIL ACTION ----------
+  const recordAudit = useCallback(({ module, action, recordId, description, user, metadata }) => {
+    const entry = buildAuditEntry({ module, action, recordId, description, user, metadata });
+    setAuditLogs((prev) => {
+      const updated = [entry, ...prev].slice(0, 500);
+      writeJSON(LOCAL_STORAGE_KEYS.auditLogs, updated);
+      return updated;
+    });
+    return entry;
+  }, []);
+
+  // ---------- MASTER ASSETS ACTIONS ----------
+  const addAsset = useCallback((asset) => {
+    const newAsset = {
+      id: "ast-" + Date.now(),
+      code: asset.code || `EQ-${Date.now().toString().slice(-4)}`,
+      name: asset.name || "ครุภัณฑ์ใหม่",
+      categoryId: asset.categoryId || "cat_hvac_water",
+      categoryName: asset.categoryName || "-",
+      buildingId: asset.buildingId || "bld_main",
+      buildingName: asset.buildingName || "-",
+      locationDetail: asset.locationDetail || "-",
+      status: asset.status || "active",
+      installationDate: asset.installationDate || new Date().toISOString().slice(0, 10),
+      warrantyExpireDate: asset.warrantyExpireDate || "",
+      responsiblePerson: asset.responsiblePerson || "เจ้าหน้าที่",
+      purchaseCost: Number(asset.purchaseCost) || 0,
+      specs: asset.specs || {},
+    };
+    setAssets((prev) => {
+      const updated = [...prev, newAsset];
+      writeJSON(LOCAL_STORAGE_KEYS.assets, updated);
+      return updated;
+    });
+    recordAudit({
+      module: AUDIT_MODULES.MASTER_DATA,
+      action: AUDIT_ACTIONS.CREATE,
+      recordId: newAsset.id,
+      description: `เพิ่มครุภัณฑ์ใหม่: ${newAsset.name} (${newAsset.code})`,
+      metadata: { code: newAsset.code, cost: newAsset.purchaseCost },
+    });
+    toast.success("เพิ่มข้อมูลครุภัณฑ์เรียบร้อย");
+  }, [recordAudit, toast]);
+
+  const updateAsset = useCallback((id, patch) => {
+    setAssets((prev) => {
+      const updated = prev.map((a) => (a.id === id ? { ...a, ...patch } : a));
+      writeJSON(LOCAL_STORAGE_KEYS.assets, updated);
+      return updated;
+    });
+    recordAudit({
+      module: AUDIT_MODULES.MASTER_DATA,
+      action: AUDIT_ACTIONS.UPDATE,
+      recordId: id,
+      description: `แก้ไขข้อมูลครุภัณฑ์รหัส: ${id}`,
+      metadata: patch,
+    });
+    toast.success("อัปเดตข้อมูลครุภัณฑ์เรียบร้อย");
+  }, [recordAudit, toast]);
+
+  const deleteAsset = useCallback((id) => {
+    setAssets((prev) => {
+      const updated = prev.map((a) => (a.id === id ? { ...a, status: "archived" } : a));
+      writeJSON(LOCAL_STORAGE_KEYS.assets, updated);
+      return updated;
+    });
+    recordAudit({
+      module: AUDIT_MODULES.MASTER_DATA,
+      action: AUDIT_ACTIONS.DELETE,
+      recordId: id,
+      description: `เก็บถาวร (Archived) ครุภัณฑ์รหัส: ${id}`,
+    });
+    toast.info("ย้ายครุภัณฑ์ไปสถานะเก็บถาวร (Archived)");
+  }, [recordAudit, toast]);
+
+  // ---------- MASTER VEHICLE ACTIONS ----------
+  const addVehicle = useCallback((veh) => {
+    const newVeh = {
+      id: "veh-" + Date.now(),
+      plateNumber: veh.plateNumber || "ป้ายทะเบียนใหม่",
+      province: veh.province || "กรุงเทพมหานคร",
+      brandModel: veh.brandModel || "-",
+      type: veh.type || "กระบะ 4 ประตู (ดีเซล)",
+      assignedUnit: veh.assignedUnit || "งานพันธกิจเพื่อสังคม (ลำปาง)",
+      primaryDriver: veh.primaryDriver || "เจ้าหน้าที่",
+      currentOdometer: Number(veh.currentOdometer) || 0,
+      avgConsumptionKmPerLiter: Number(veh.avgConsumptionKmPerLiter) || 11.5,
+      fuelType: veh.fuelType || "ดีเซล B7 / PTT Fleet Card",
+      fleetCardNumber: veh.fleetCardNumber || "-",
+      fleetCardLimitMonthly: Number(veh.fleetCardLimitMonthly) || 15000,
+      status: veh.status || "active",
+      tankCapacityLiters: Number(veh.tankCapacityLiters) || 80,
+      nextMaintenanceKm: Number(veh.nextMaintenanceKm) || (Number(veh.currentOdometer) || 0) + 10000,
+    };
+    setFuelVehicles((prev) => {
+      const updated = [...prev, newVeh];
+      writeJSON(LOCAL_STORAGE_KEYS.fuelVehicles, updated);
+      return updated;
+    });
+    recordAudit({
+      module: AUDIT_MODULES.MASTER_DATA,
+      action: AUDIT_ACTIONS.CREATE,
+      recordId: newVeh.id,
+      description: `เพิ่มยานพาหนะใหม่: ทะเบียน ${newVeh.plateNumber} ${newVeh.province}`,
+      metadata: { plate: newVeh.plateNumber },
+    });
+    toast.success("เพิ่มข้อมูลยานพาหนะเรียบร้อย");
+  }, [recordAudit, toast]);
+
+  const updateVehicle = useCallback((id, patch) => {
+    setFuelVehicles((prev) => {
+      const updated = prev.map((v) => (v.id === id ? { ...v, ...patch } : v));
+      writeJSON(LOCAL_STORAGE_KEYS.fuelVehicles, updated);
+      return updated;
+    });
+    recordAudit({
+      module: AUDIT_MODULES.MASTER_DATA,
+      action: AUDIT_ACTIONS.UPDATE,
+      recordId: id,
+      description: `แก้ไขข้อมูลยานพาหนะรหัส: ${id}`,
+      metadata: patch,
+    });
+    toast.success("อัปเดตข้อมูลยานพาหนะเรียบร้อย");
+  }, [recordAudit, toast]);
+
+  const deleteVehicle = useCallback((id) => {
+    setFuelVehicles((prev) => {
+      const updated = prev.map((v) => (v.id === id ? { ...v, status: "archived" } : v));
+      writeJSON(LOCAL_STORAGE_KEYS.fuelVehicles, updated);
+      return updated;
+    });
+    recordAudit({
+      module: AUDIT_MODULES.MASTER_DATA,
+      action: AUDIT_ACTIONS.DELETE,
+      recordId: id,
+      description: `เก็บถาวร (Archived) ยานพาหนะรหัส: ${id}`,
+    });
+    toast.info("ย้ายยานพาหนะไปสถานะเก็บถาวร (Archived)");
+  }, [recordAudit, toast]);
+
   // ---------- FUEL MANAGEMENT ACTIONS ----------
   const addMowerTransaction = useCallback((tx) => {
+    const dep = Number(tx.depositLiters) || 0;
+    const wit = Number(tx.withdrawLiters) || 0;
+    let failed = false;
+
     setFuelMowerLogs((prev) => {
       const currentBalance = prev.length > 0 ? prev[prev.length - 1].balanceLiters : 0;
-      const dep = Number(tx.depositLiters) || 0;
-      const wit = Number(tx.withdrawLiters) || 0;
+      if (wit > 0 && wit > currentBalance) {
+        failed = true;
+        return prev;
+      }
       const newBalance = Math.max(0, currentBalance + dep - wit);
       const newTx = {
         id: "mw-tx-" + Date.now(),
@@ -407,12 +566,30 @@ export function AppDataProviderSupabase({ children }) {
       writeJSON(LOCAL_STORAGE_KEYS.fuelMower, updated);
       return updated;
     });
+
+    if (failed) {
+      toast.error("ไม่สามารถเบิกได้: ปริมาณที่เบิกเกินยอดน้ำมันคงเหลือในถังกลาง!");
+      return false;
+    }
+
+    recordAudit({
+      module: AUDIT_MODULES.FUEL,
+      action: AUDIT_ACTIONS.CREATE,
+      recordId: "mw-tx-" + Date.now(),
+      description: dep > 0 ? `เติมน้ำมันเข้าถังกลาง ${dep} ลิตร` : `เบิกน้ำมันตัดหญ้า ${wit} ลิตร (${tx.requestedBy})`,
+      metadata: { dep, wit, purpose: tx.purpose },
+    });
     toast.success("บันทึกรายการคลังน้ำมันเครื่องตัดหญ้าเรียบร้อย");
-  }, [toast]);
+    return true;
+  }, [recordAudit, toast]);
 
   const addVehicleTrip = useCallback((trip) => {
     const sOdo = Number(trip.startOdo) || 0;
     const eOdo = Number(trip.endOdo) || 0;
+    if (eOdo < sOdo) {
+      toast.error("ข้อมูลไม่ถูกต้อง: เลขไมล์กลับห้ามต่ำกว่าเลขไมล์ไป!");
+      return false;
+    }
     const distance = Math.max(0, eOdo - sOdo);
     const newTrip = {
       id: "trip-" + Date.now(),
@@ -443,8 +620,17 @@ export function AppDataProviderSupabase({ children }) {
       return updated;
     });
 
+    recordAudit({
+      module: AUDIT_MODULES.FUEL,
+      action: AUDIT_ACTIONS.CREATE,
+      recordId: newTrip.id,
+      description: `บันทึกทริปรถยนต์ ${trip.route} (${distance} กม.) คนขับ: ${trip.driver}`,
+      metadata: { distance, startOdo: sOdo, endOdo: eOdo },
+    });
+
     toast.success(`บันทึกการเดินทางเรียบร้อย (ระยะทาง ${distance} กม.)`);
-  }, [toast]);
+    return true;
+  }, [recordAudit, toast]);
 
   const addRefuelLog = useCallback((log) => {
     const newLog = {
@@ -555,6 +741,8 @@ export function AppDataProviderSupabase({ children }) {
       // fuel management data & actions
       fuelVehicles, fuelMowerLogs, fuelVehicleTrips, fuelRefuelLogs, fuelPlans,
       addMowerTransaction, addVehicleTrip, addRefuelLog, addFuelPlan, updateFuelPlanActual, resetFuelData,
+      // master assets, vehicles & audit trail
+      assets, auditLogs, recordAudit, addAsset, updateAsset, deleteAsset, addVehicle, updateVehicle, deleteVehicle,
       // system
       toasts, toast, dismiss,
       storage: {
@@ -581,6 +769,7 @@ export function AppDataProviderSupabase({ children }) {
       updateWorkOrderStatus, updateWorkOrder,
       fuelVehicles, fuelMowerLogs, fuelVehicleTrips, fuelRefuelLogs, fuelPlans,
       addMowerTransaction, addVehicleTrip, addRefuelLog, addFuelPlan, updateFuelPlanActual, resetFuelData,
+      assets, auditLogs, recordAudit, addAsset, updateAsset, deleteAsset, addVehicle, updateVehicle, deleteVehicle,
       toasts, toast, dismiss, migrationStatus, runMigration, isMigrating, wipeAll, loading
     ]
   );

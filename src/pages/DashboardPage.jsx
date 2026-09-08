@@ -1,7 +1,7 @@
 // ============================================================
 // DashboardPage.jsx — Main Overview Dashboard
 // ============================================================
-import React from "react";
+import React, { useMemo } from "react";
 import {
   ClipboardCheck,
   Wrench,
@@ -18,6 +18,10 @@ import {
   CheckCircle2,
   Fuel,
   Car,
+  ShoppingCart,
+  Database,
+  Layers,
+  Sparkles,
 } from "lucide-react";
 import { useAppData } from "../store/AppDataProvider";
 import { StatCard } from "../components/ui/StatCard";
@@ -63,6 +67,19 @@ export function DashboardPage() {
     0
   );
 
+  // Fuel and Fleet Metrics
+  const mowerBalance = useMemo(() => {
+    if (!fuelMowerLogs || fuelMowerLogs.length === 0) return 95.0;
+    return fuelMowerLogs[fuelMowerLogs.length - 1].balanceLiters;
+  }, [fuelMowerLogs]);
+
+  const mowerPct = Math.min(100, Math.round((mowerBalance / 200) * 100));
+
+  const vehicleDistance = useMemo(() => {
+    if (!fuelVehicleTrips || fuelVehicleTrips.length === 0) return 505;
+    return fuelVehicleTrips.reduce((s, t) => s + (Number(t.distanceKm) || 0), 0);
+  }, [fuelVehicleTrips]);
+
   // Pipeline distribution across status 0-6
   const pipeline = STATUS_FLOW.filter((s) => s.id > 0).map((s) => ({
     ...s,
@@ -83,91 +100,95 @@ export function DashboardPage() {
 
   return (
     <div className="space-y-6 animate-fade">
-      {/* Hero Banner */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-600 via-indigo-700 to-slate-900 p-6 text-white shadow-xl sm:p-8">
-        <div className="absolute -right-16 -top-16 h-56 w-56 rounded-full bg-white/10 blur-2xl" />
-        <div className="absolute -bottom-20 right-24 h-48 w-48 rounded-full bg-amber-400/20 blur-3xl" />
+      {/* Hero Banner — Mahidol Lampang Identity */}
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#123B63] via-[#0e2b42] to-slate-900 p-6 text-white shadow-xl border border-white/10 sm:p-8">
+        <div className="absolute -right-16 -top-16 h-56 w-56 rounded-full bg-[#D6A84F]/10 blur-3xl" />
+        <div className="absolute -bottom-20 right-24 h-48 w-48 rounded-full bg-[#1677A8]/20 blur-3xl" />
         <div className="relative flex flex-wrap items-end justify-between gap-4">
           <div>
-            <Badge className="border-white/25 bg-white/15 text-white">
-              ระบบตรวจเช็คอาคารและความปลอดภัย
-            </Badge>
-            <h1 className="mt-3 text-2xl font-extrabold sm:text-3xl">ภาพรวมระบบบำรุงรักษา</h1>
-            <p className="mt-1 text-sm text-indigo-100">
-              ผู้ใช้งาน: ฝ่ายอาคารสถานที่และความปลอดภัย
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge className="border-[#D6A84F]/40 bg-[#D6A84F]/20 text-[#D6A84F] font-bold">
+                งานพันธกิจเพื่อสังคม · ลำปาง
+              </Badge>
+              <span className="text-xs text-blue-200 font-medium">
+                คณะสิ่งแวดล้อมและทรัพยากรศาสตร์ มหาวิทยาลัยมหิดล
+              </span>
+            </div>
+            <h1 className="mt-3 text-2xl font-extrabold sm:text-3xl text-white tracking-tight">
+              ภาพรวมระบบบริหารจัดการอาคารและสาธารณูปโภค
+            </h1>
+            <p className="mt-1 text-sm text-blue-100/90">
+              Unified Facility, Safety, Maintenance, Procurement &amp; Fuel Platform
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <button
               onClick={() => setPage("inspection")}
-              className="flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-bold text-indigo-700 shadow-lg transition hover:bg-indigo-50 active:scale-95"
+              className="flex items-center gap-2 rounded-xl bg-[#D6A84F] px-4 py-2.5 text-sm font-black text-[#123B63] shadow-lg transition hover:bg-[#c49842] active:scale-95"
             >
-              <ClipboardCheck className="h-4 w-4" /> เริ่มตรวจเช็ค
+              <ClipboardCheck className="h-4 w-4 text-[#123B63]" /> เริ่มตรวจเช็ค
             </button>
             <button
               onClick={() => setPage("workorder")}
               className="flex items-center gap-2 rounded-xl border border-white/30 bg-white/10 px-4 py-2.5 text-sm font-bold text-white backdrop-blur transition hover:bg-white/20 active:scale-95"
             >
-              <Wrench className="h-4 w-4" /> งานซ่อม
+              <Wrench className="h-4 w-4" /> งานซ่อม (CM/PM)
             </button>
             <button
               onClick={() => setPage("fuel")}
-              className="flex items-center gap-2 rounded-xl bg-amber-400 px-4 py-2.5 text-sm font-bold text-slate-900 shadow-lg transition hover:bg-amber-300 active:scale-95"
+              className="flex items-center gap-2 rounded-xl bg-[#1677A8] px-4 py-2.5 text-sm font-bold text-white shadow-lg transition hover:bg-[#146690] active:scale-95"
             >
-              <Fuel className="h-4 w-4" /> เชื้อเพลิง &amp; รถยนต์
+              <Fuel className="h-4 w-4 text-white" /> เชื้อเพลิง &amp; รถยนต์
             </button>
           </div>
         </div>
       </div>
 
-      {/* KPI Stat cards */}
+      {/* 4 Primary Operational Pillars (KPIs) */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {/* Pillar 1: Inspection & Safety */}
         <StatCard
           icon={ClipboardCheck}
           tone="indigo"
-          label="การตรวจประจำวันนี้"
-          value={todayInsp}
-          sub={`บันทึกแล้ว ${todayInsp} รอบตรวจ · ${buildings.length} อาคาร`}
-          footer={
-            <div className="flex items-center gap-1.5 text-xs font-medium text-emerald-600">
-              <TrendingUp className="h-3.5 w-3.5" /> ครอบคลุม {categories.length} หมวดการตรวจ
-            </div>
+          label="1. ตรวจเช็ค &amp; ความปลอดภัย"
+          value={failPoints > 0 ? `${failPoints} จุดชำรุด` : `${todayInsp} รอบตรวจ`}
+          sub={
+            failPoints > 0
+              ? `ตรวจแล้ว ${todayInsp} รอบ · เฝ้าระวัง ${warnPoints} จุด · ${buildings.length} อาคาร`
+              : `ตรวจแล้ว ${todayInsp} รอบ · ปลอดภัยทุกจุด · ${buildings.length} อาคาร`
           }
-        />
-        <StatCard
-          icon={ShieldAlert}
-          tone="red"
-          label="จุดที่ไม่ผ่านเกณฑ์"
-          value={failPoints}
-          sub={`เฝ้าระวังเพิ่มเติมอีก ${warnPoints} จุด`}
           footer={
             <button
               onClick={() => setPage("inspection")}
-              className="flex items-center gap-1 text-xs font-semibold text-red-600 hover:underline"
+              className="flex items-center gap-1 text-xs font-semibold text-indigo-600 hover:underline"
             >
-              ตรวจเพิ่มเติม <ChevronRight className="h-3.5 w-3.5" />
+              เปิดระบบตรวจเช็ค &amp; ข้อบกพร่อง <ChevronRight className="h-3.5 w-3.5" />
             </button>
           }
         />
+
+        {/* Pillar 2: Work Orders & Maintenance */}
         <StatCard
-          icon={AlertTriangle}
+          icon={Wrench}
           tone="amber"
-          label="ใบแจ้งซ่อมเร่งด่วน"
-          value={urgent.length}
-          sub={`งานค้างทั้งหมด ${openWO.length} รายการ`}
+          label="2. งานซ่อมบำรุงที่เปิดอยู่"
+          value={`${openWO.length} งาน`}
+          sub={`เร่งด่วน ${urgent.length} งาน · ดำเนินการแล้วเสร็จ ${doneWO.length} งาน`}
           footer={
             <button
               onClick={() => setPage("workorder")}
               className="flex items-center gap-1 text-xs font-semibold text-amber-600 hover:underline"
             >
-              เปิดดู Work Orders <ChevronRight className="h-3.5 w-3.5" />
+              ติดตาม Work Orders (7 ขั้นตอน) <ChevronRight className="h-3.5 w-3.5" />
             </button>
           }
         />
+
+        {/* Pillar 3: Procurement & Budget */}
         <StatCard
           icon={CircleDollarSign}
           tone="emerald"
-          label="สถานะงบประมาณ"
+          label="3. งบประมาณจัดซื้อ/ซ่อมบำรุง"
           value={`${usedPct}%`}
           sub={`ใช้ไป ${fmt(spent + committed)} / ${fmt(budgetTotal)} บาท`}
           footer={
@@ -181,36 +202,177 @@ export function DashboardPage() {
                   style={{ width: `${usedPct}%` }}
                 />
               </div>
-              <p className="mt-1.5 text-[11px] text-slate-400">
-                คงเหลือ {fmt(budgetTotal - spent - committed)} บาท
-              </p>
+              <div className="mt-2 flex items-center justify-between">
+                <span className="text-[11px] text-slate-500">
+                  คงเหลือ {fmt(budgetTotal - spent - committed)} บาท
+                </span>
+                <button
+                  onClick={() => setPage("procurement")}
+                  className="flex items-center gap-1 text-[11px] font-bold text-emerald-700 hover:underline"
+                >
+                  จัดหา งพ.001 <ChevronRight className="h-3 w-3" />
+                </button>
+              </div>
             </div>
+          }
+        />
+
+        {/* Pillar 4: Utilities & Fuel Management */}
+        <StatCard
+          icon={Fuel}
+          tone="sky"
+          label="4. คลังเชื้อเพลิง &amp; ยานพาหนะ"
+          value={`${mowerBalance.toFixed(1)} ลิตร`}
+          sub={`ถังกลางเครื่องตัดหญ้า (${mowerPct}%) · 6ฝ-0559 สะสม ${fmt(vehicleDistance)} กม.`}
+          footer={
+            <button
+              onClick={() => setPage("fuel")}
+              className="flex items-center gap-1 text-xs font-semibold text-sky-700 hover:underline"
+            >
+              เปิดโมดูลบริหารเชื้อเพลิง &amp; แผน <ChevronRight className="h-3.5 w-3.5" />
+            </button>
           }
         />
       </div>
 
-      {/* Utility & Fuel Quick Highlight Card */}
-      <div className="rounded-3xl border border-blue-200 bg-gradient-to-r from-blue-900 via-indigo-950 to-slate-900 p-5 text-white shadow-lg flex flex-col md:flex-row items-center justify-between gap-4">
-        <div className="flex items-center gap-3.5">
-          <div className="rounded-2xl bg-amber-400 p-3 text-slate-950 shadow-md">
-            <Fuel className="h-6 w-6" />
-          </div>
+      {/* Unified 5-Pillar Navigation Matrix (Quick Access Hub) */}
+      <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
           <div>
-            <div className="flex items-center gap-2">
-              <h3 className="text-base font-extrabold text-white">ระบบสาธารณูปโภค &amp; บริหารจัดการเชื้อเพลิง (Fuel Management)</h3>
-              <Badge className="bg-amber-400/20 text-amber-300 border-amber-400/30 text-[10px]">อัปเดต ส.ค. 2569</Badge>
-            </div>
-            <p className="text-xs text-blue-200 mt-0.5">
-              คลังถังกลางเครื่องตัดหญ้าคงเหลือ <span className="font-bold text-amber-300">95.0 ลิตร</span> • รถราชการ 6ฝ-0559 วิ่งสะสม <span className="font-bold text-white">505 กม.</span> (ประหยัดงบ Fleet Card 100%)
+            <h3 className="text-sm font-extrabold text-slate-800 flex items-center gap-2">
+              <Layers className="h-4 w-4 text-indigo-600" />
+              ศูนย์กลาง 5 ภารกิจหลัก (Unified Facility &amp; Safety Hub)
+            </h3>
+            <p className="text-xs text-slate-400">
+              เข้าถึงโมดูลการทำงานหลักของคณะสิ่งแวดล้อมและทรัพยากรศาสตร์ (ลำปาง)
             </p>
           </div>
+          <Badge className="bg-indigo-50 text-indigo-700 border-indigo-200">
+            ระบบบริหารจัดการแบบบูรณาการ
+          </Badge>
         </div>
-        <button
-          onClick={() => setPage("fuel")}
-          className="flex items-center gap-1.5 rounded-xl bg-white px-4 py-2 text-xs font-bold text-slate-900 shadow-md transition hover:bg-blue-50 active:scale-95 whitespace-nowrap"
-        >
-          เปิดโมดูลเชื้อเพลิง &amp; วางแผน <ChevronRight className="h-4 w-4 text-blue-600" />
-        </button>
+
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
+          {/* Pillar 1 */}
+          <button
+            onClick={() => setPage("inspection")}
+            className="group flex flex-col justify-between rounded-2xl border border-slate-200 bg-slate-50/60 p-4 text-left transition-all hover:border-indigo-300 hover:bg-indigo-50/40 hover:shadow-md"
+          >
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <span className="rounded-xl bg-indigo-100 p-2 text-indigo-700 group-hover:scale-110 transition">
+                  <ClipboardCheck className="h-4 w-4" />
+                </span>
+                <span className="text-[10px] font-bold text-slate-400">งานที่ 1</span>
+              </div>
+              <h4 className="text-xs font-black text-slate-800 group-hover:text-indigo-700">
+                1. ตรวจสอบ &amp; ความปลอดภัย
+              </h4>
+              <p className="mt-1 text-[11px] text-slate-500 leading-snug">
+                เช็คลิสต์ตรวจอาคาร พบข้อบกพร่องเปิดใบสั่งซ่อมทันที
+              </p>
+            </div>
+            <span className="mt-3 flex items-center gap-1 text-[11px] font-bold text-indigo-600">
+              เปิดตรวจเช็ค <ChevronRight className="h-3 w-3" />
+            </span>
+          </button>
+
+          {/* Pillar 2 */}
+          <button
+            onClick={() => setPage("workorder")}
+            className="group flex flex-col justify-between rounded-2xl border border-slate-200 bg-slate-50/60 p-4 text-left transition-all hover:border-amber-300 hover:bg-amber-50/40 hover:shadow-md"
+          >
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <span className="rounded-xl bg-amber-100 p-2 text-amber-700 group-hover:scale-110 transition">
+                  <Wrench className="h-4 w-4" />
+                </span>
+                <span className="text-[10px] font-bold text-slate-400">งานที่ 2</span>
+              </div>
+              <h4 className="text-xs font-black text-slate-800 group-hover:text-amber-700">
+                2. จัดการงานซ่อมบำรุง
+              </h4>
+              <p className="mt-1 text-[11px] text-slate-500 leading-snug">
+                CM/PM 7 ขั้นตอน มอบหมายช่าง คำนวณค่าแรง/บริการ
+              </p>
+            </div>
+            <span className="mt-3 flex items-center gap-1 text-[11px] font-bold text-amber-600">
+              ดู Work Orders <ChevronRight className="h-3 w-3" />
+            </span>
+          </button>
+
+          {/* Pillar 3 */}
+          <button
+            onClick={() => setPage("procurement")}
+            className="group flex flex-col justify-between rounded-2xl border border-slate-200 bg-slate-50/60 p-4 text-left transition-all hover:border-emerald-300 hover:bg-emerald-50/40 hover:shadow-md"
+          >
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <span className="rounded-xl bg-emerald-100 p-2 text-emerald-700 group-hover:scale-110 transition">
+                  <ShoppingCart className="h-4 w-4" />
+                </span>
+                <span className="text-[10px] font-bold text-slate-400">งานที่ 3</span>
+              </div>
+              <h4 className="text-xs font-black text-slate-800 group-hover:text-emerald-700">
+                3. จัดหา &amp; คุมงบประมาณ
+              </h4>
+              <p className="mt-1 text-[11px] text-slate-500 leading-snug">
+                ขออนุมัติแบบ งพ.001 / งพ.003 และตัดงบประมาณ
+              </p>
+            </div>
+            <span className="mt-3 flex items-center gap-1 text-[11px] font-bold text-emerald-600">
+              จัดซื้อ/พัสดุ <ChevronRight className="h-3 w-3" />
+            </span>
+          </button>
+
+          {/* Pillar 4 */}
+          <button
+            onClick={() => setPage("fuel")}
+            className="group flex flex-col justify-between rounded-2xl border border-slate-200 bg-slate-50/60 p-4 text-left transition-all hover:border-sky-300 hover:bg-sky-50/40 hover:shadow-md"
+          >
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <span className="rounded-xl bg-sky-100 p-2 text-sky-700 group-hover:scale-110 transition">
+                  <Fuel className="h-4 w-4" />
+                </span>
+                <span className="text-[10px] font-bold text-slate-400">งานที่ 4</span>
+              </div>
+              <h4 className="text-xs font-black text-slate-800 group-hover:text-sky-700">
+                4. บริหารเชื้อเพลิง &amp; รถ
+              </h4>
+              <p className="mt-1 text-[11px] text-slate-500 leading-snug">
+                คลังถังกลาง 200L, ทริป 6ฝ-0559, ประเมินล่วงหน้า
+              </p>
+            </div>
+            <span className="mt-3 flex items-center gap-1 text-[11px] font-bold text-sky-600">
+              บริหารน้ำมัน <ChevronRight className="h-3 w-3" />
+            </span>
+          </button>
+
+          {/* Pillar 5 */}
+          <button
+            onClick={() => setPage("admin")}
+            className="group flex flex-col justify-between rounded-2xl border border-slate-200 bg-slate-50/60 p-4 text-left transition-all hover:border-purple-300 hover:bg-purple-50/40 hover:shadow-md"
+          >
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <span className="rounded-xl bg-purple-100 p-2 text-purple-700 group-hover:scale-110 transition">
+                  <Database className="h-4 w-4" />
+                </span>
+                <span className="text-[10px] font-bold text-slate-400">งานที่ 5</span>
+              </div>
+              <h4 className="text-xs font-black text-slate-800 group-hover:text-purple-700">
+                5. ข้อมูลหลัก &amp; Audit Trail
+              </h4>
+              <p className="mt-1 text-[11px] text-slate-500 leading-snug">
+                ทะเบียนครุภัณฑ์, ยานพาหนะ, ประวัติกิจกรรมย้อนหลัง
+              </p>
+            </div>
+            <span className="mt-3 flex items-center gap-1 text-[11px] font-bold text-purple-600">
+              ศูนย์ข้อมูลหลัก <ChevronRight className="h-3 w-3" />
+            </span>
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">

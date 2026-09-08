@@ -286,7 +286,7 @@ export const INITIAL_FUEL_PLANS = [
     actualWorkUnit: 505, // วิ่งจริง 505 กม.
     actualLiters: 43.9, // 505 / 11.5
     actualBudget: 0, // ไม่ได้เติมเพิ่ม (ใช้ค้างถัง)
-    variancePercentage: -2.8, // (43.9 - 45.2) / 45.2 * 100
+    variancePercentage: -2.9, // (43.9 - 45.2) / 45.2 * 100 = -2.876% -> -2.9%
     status: "completed",
     varianceReason: "ปฏิบัติงานตามเส้นทางปกติ ประหยัดน้ำมันได้ตามแผน",
   },

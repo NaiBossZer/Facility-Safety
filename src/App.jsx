@@ -5,6 +5,7 @@ import React, { useState } from "react";
 import { useAppData } from "./store/AppDataProviderSupabase";
 import { Sidebar } from "./components/layout/Sidebar";
 import { Header } from "./components/layout/Header";
+import { MahidolTopBar } from "./components/layout/MahidolTopBar";
 import { BottomNav } from "./components/layout/BottomNav";
 import { Toast } from "./components/ui/Toast";
 import { MigrationBanner } from "./components/MigrationBanner";
@@ -64,6 +65,9 @@ export default function App() {
           }
         }
       `}</style>
+
+      {/* Official Mahidol University Global Navigation Bar */}
+      <MahidolTopBar />
 
       {/* Sidebar Navigation (Desktop & Mobile Drawer) */}
       <Sidebar menuOpen={menuOpen} setMenuOpen={setMenuOpen} currentUser={currentUser} onLogout={logout} />

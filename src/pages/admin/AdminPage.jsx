@@ -11,6 +11,9 @@ import {
   Settings,
   Lock,
   Users,
+  Wrench,
+  Car,
+  ShieldAlert,
 } from "lucide-react";
 import { useAdminAuth } from "../../hooks/useAdminAuth";
 import { PinGate } from "../../components/admin/PinGate";
@@ -22,15 +25,21 @@ import {
   SettingsManager,
 } from "./OtherManagers";
 import { PersonnelManager } from "./PersonnelManager";
+import { AssetManager } from "./AssetManager";
+import { VehicleManager } from "./VehicleManager";
+import { AuditTrailViewer } from "./AuditTrailViewer";
 import { SectionTitle } from "../../components/ui/SectionTitle";
 import { cx } from "../../lib/helpers";
 
 const TABS = [
   { id: "personnel",name: "บุคลากร & ผู้รับผิดชอบ", icon: Users },
   { id: "catalog",  name: "หมวด & รายการตรวจ", icon: Layers },
+  { id: "asset",    name: "ครุภัณฑ์ (Assets)",    icon: Wrench },
+  { id: "vehicle",  name: "ยานพาหนะ (Vehicles)", icon: Car },
   { id: "building", name: "ข้อมูลอาคาร",         icon: Building2 },
   { id: "vendor",   name: "ร้านค้า/ผู้ขาย",       icon: Store },
   { id: "budget",   name: "งบประมาณ",          icon: CircleDollarSign },
+  { id: "audit",    name: "บันทึกตรวจสอบ (Audit)", icon: ShieldAlert },
   { id: "settings", name: "ตั้งค่าระบบ & สำรอง", icon: Settings },
 ];
 
@@ -106,9 +115,12 @@ export function AdminPage({ onExit }) {
       <main>
         {activeTab === "personnel" && <PersonnelManager />}
         {activeTab === "catalog" && <CatalogManager />}
+        {activeTab === "asset" && <AssetManager />}
+        {activeTab === "vehicle" && <VehicleManager />}
         {activeTab === "building" && <BuildingManager />}
         {activeTab === "vendor" && <VendorManager />}
         {activeTab === "budget" && <BudgetManager />}
+        {activeTab === "audit" && <AuditTrailViewer />}
         {activeTab === "settings" && <SettingsManager auth={auth} />}
       </main>
     </div>

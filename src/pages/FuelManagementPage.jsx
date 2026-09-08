@@ -63,6 +63,17 @@ export function FuelManagementPage() {
   const [showAddRefuelModal, setShowAddRefuelModal] = useState(false);
   const [showAddPlanModal, setShowAddPlanModal] = useState(false);
   const [varianceModalPlan, setVarianceModalPlan] = useState(null);
+  const [varianceReasonText, setVarianceReasonText] = useState("");
+
+  const VARIANCE_REASONS = [
+    "ภารกิจเพิ่มเติมนอกแผนงาน",
+    "งานเร่งด่วนตามข้อสั่งการผู้บริหาร",
+    "เดินทางเพิ่มเติมหลายจุด/ภารกิจนอกสถานที่",
+    "สภาพอากาศ/หญ้าหนาชื้น เครื่องทำงานหนักขึ้น",
+    "สภาพจราจรติดขัด/เส้นทางขรุขระชัน",
+    "ราคาน้ำมันเปลี่ยนแปลง",
+    "อื่นๆ (ระบุรายละเอียดเพิ่มเติม)",
+  ];
 
   // Active vehicle (6ฝ-0559)
   const vehicle = fuelVehicles[0] || {};
@@ -1002,14 +1013,20 @@ export function FuelManagementPage() {
                         <td className="px-3.5 py-3 text-center whitespace-nowrap">
                           {pl.status === "active" ? (
                             <button
-                              onClick={() => setVarianceModalPlan(pl)}
+                              onClick={() => {
+                                setVarianceModalPlan(pl);
+                                setVarianceReasonText(pl.varianceReason || "");
+                              }}
                               className="rounded-lg bg-blue-600 px-2.5 py-1 text-[11px] font-bold text-white shadow-xs hover:bg-blue-500"
                             >
                               บันทึกผลจริง
                             </button>
                           ) : (
                             <button
-                              onClick={() => setVarianceModalPlan(pl)}
+                              onClick={() => {
+                                setVarianceModalPlan(pl);
+                                setVarianceReasonText(pl.varianceReason || "");
+                              }}
                               className="rounded-lg border border-slate-200 px-2 py-1 text-[11px] font-semibold text-slate-600 hover:bg-slate-100"
                             >
                               แก้ไขผล
@@ -1629,10 +1646,11 @@ export function FuelManagementPage() {
                 const actualWork = Number(fd.get("actualWorkUnit")) || 0;
                 const actualLiters = Number(fd.get("actualLiters")) || 0;
                 const actualBudget = Number(fd.get("actualBudget")) || 0;
-                const reason = fd.get("varianceReason");
+                const reason = varianceReasonText.trim() || fd.get("varianceReason") || "";
 
                 updateFuelPlanActual(varianceModalPlan.id, actualWork, actualLiters, actualBudget, reason);
                 setVarianceModalPlan(null);
+                setVarianceReasonText("");
               }}
               className="mt-4 space-y-3.5 text-xs"
             >
@@ -1681,13 +1699,34 @@ export function FuelManagementPage() {
 
               <div>
                 <label className="font-bold text-slate-700 block mb-1">
-                  เหตุผลชี้แจง (กรณีใช้เกินแผน &gt; 15% จะบังคับระบุ)
+                  เลือกเหตุผลมาตรฐาน (Preset Variance Reason)
+                </label>
+                <select
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val && val !== "อื่นๆ (ระบุรายละเอียดเพิ่มเติม)") {
+                      setVarianceReasonText(val);
+                    }
+                  }}
+                  className="w-full rounded-xl border border-slate-200 p-2.5 font-medium text-slate-700 mb-2"
+                >
+                  <option value="">-- เลือกเหตุผลมาตรฐาน (Quick Select) --</option>
+                  {VARIANCE_REASONS.map((r, idx) => (
+                    <option key={idx} value={r}>
+                      {r}
+                    </option>
+                  ))}
+                </select>
+
+                <label className="font-bold text-slate-700 block mb-1">
+                  รายละเอียดเหตุผลชี้แจง (กรณีใช้เกินแผน &gt; 15% บังคับระบุ)
                 </label>
                 <textarea
                   name="varianceReason"
                   rows={3}
-                  defaultValue={varianceModalPlan.varianceReason}
-                  placeholder="เช่น ฝนตกหนักหญ้าชื้นเครื่องทำงานหนัก, วิ่งช่วยภารกิจด่วน ฯลฯ"
+                  value={varianceReasonText}
+                  onChange={(e) => setVarianceReasonText(e.target.value)}
+                  placeholder="เลือกเหตุผลด้านบน หรือพิมพ์ชี้แจงเหตุผลความจำเป็น..."
                   className="w-full rounded-xl border border-slate-200 p-2.5 text-slate-800 focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
@@ -1695,7 +1734,10 @@ export function FuelManagementPage() {
               <div className="mt-5 flex gap-2 pt-2 border-t border-slate-100">
                 <button
                   type="button"
-                  onClick={() => setVarianceModalPlan(null)}
+                  onClick={() => {
+                    setVarianceModalPlan(null);
+                    setVarianceReasonText("");
+                  }}
                   className="flex-1 rounded-xl border border-slate-200 py-2.5 font-bold text-slate-600 hover:bg-slate-50"
                 >
                   ยกเลิก

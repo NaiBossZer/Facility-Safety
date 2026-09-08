@@ -43,20 +43,22 @@ export function Sidebar({ menuOpen, setMenuOpen, currentUser, onLogout }) {
   return (
     <>
       {/* Desktop Sidebar */}
-      <aside className="no-print fixed inset-y-0 left-0 z-40 hidden w-64 flex-col border-r border-slate-200 bg-white lg:flex">
+      <aside className="no-print fixed top-[52px] bottom-0 left-0 z-40 hidden w-64 flex-col border-r border-slate-200 bg-white lg:flex">
         {/* Brand Header */}
-        <div className="flex items-center gap-2.5 border-b border-slate-100 px-5 py-5">
-          <span className="rounded-xl bg-gradient-to-br from-indigo-600 to-indigo-800 p-2.5 shadow-lg shadow-indigo-200">
-            <ShieldAlert className="h-5 w-5 text-white" />
-          </span>
-          <div>
-            <p className="text-sm font-extrabold leading-tight text-slate-800">Facility & Safety</p>
-            <p className="text-[11px] text-slate-400">ระบบตรวจเช็คอาคาร v2.6</p>
+        <div className="flex items-center gap-3 border-b border-slate-100 px-5 py-4 bg-slate-50/60">
+          <img
+            src="/mahidol-logo.png"
+            alt="Mahidol University"
+            className="h-8 w-auto rounded-md bg-white p-0.5 shadow-xs ring-1 ring-slate-200"
+          />
+          <div className="min-w-0">
+            <p className="text-xs font-black leading-tight text-[#123B63] truncate">Facility &amp; Safety Platform</p>
+            <p className="text-[10px] font-semibold text-[#D6A84F] truncate">งานพันธกิจเพื่อสังคม ลำปาง</p>
           </div>
         </div>
 
         {/* Navigation Links */}
-        <nav className="flex-1 space-y-1.5 p-3">
+        <nav className="flex-1 space-y-1.5 p-3 overflow-y-auto">
           {NAV_ITEMS.filter((n) => n.id !== "admin" || ["admin", "dean", "deputy_dean", "finance_head", "section_head"].includes(currentUser?.role)).map((n) => {
             const Icon = n.icon;
             const on = page === n.id;
@@ -67,27 +69,27 @@ export function Sidebar({ menuOpen, setMenuOpen, currentUser, onLogout }) {
                 className={cx(
                   "group flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition-all duration-200",
                   on
-                    ? "bg-indigo-600 text-white shadow-lg shadow-indigo-200"
-                    : "text-slate-600 hover:bg-slate-100"
+                    ? "bg-[#123B63] text-white shadow-md shadow-[#123B63]/25 border-l-4 border-[#D6A84F]"
+                    : "text-slate-600 hover:bg-slate-100 hover:text-[#123B63]"
                 )}
               >
                 <Icon
                   className={cx(
                     "h-5 w-5 shrink-0 transition-transform group-hover:scale-110",
-                    on ? "text-white" : "text-slate-400"
+                    on ? "text-[#D6A84F]" : "text-slate-400 group-hover:text-[#123B63]"
                   )}
                 />
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-bold">{n.name}</p>
-                  <p className={cx("truncate text-[11px]", on ? "text-indigo-100" : "text-slate-400")}>
+                  <p className={cx("truncate text-[11px]", on ? "text-blue-100" : "text-slate-400")}>
                     {n.desc}
                   </p>
                 </div>
                 {n.id === "workorder" && openCount > 0 && (
                   <span
                     className={cx(
-                      "rounded-full px-1.5 py-0.5 text-[10px] font-bold",
-                      on ? "bg-white text-indigo-700" : "bg-slate-200 text-slate-600"
+                      "rounded-full px-2 py-0.5 text-[10px] font-black",
+                      on ? "bg-[#D6A84F] text-[#123B63]" : "bg-slate-200 text-slate-700"
                     )}
                   >
                     {openCount}
@@ -99,17 +101,17 @@ export function Sidebar({ menuOpen, setMenuOpen, currentUser, onLogout }) {
         </nav>
 
         {/* Urgent Alert Banner in Sidebar */}
-        <div className="m-3 rounded-2xl bg-gradient-to-br from-slate-800 to-slate-900 p-4 text-white">
+        <div className="m-3 rounded-2xl bg-gradient-to-br from-[#123B63] via-[#0e2b42] to-slate-900 p-4 text-white border border-white/10 shadow-sm">
           <div className="flex items-center gap-2">
-            <AlertTriangle className="h-4 w-4 text-amber-400" />
-            <p className="text-xs font-bold">แจ้งเตือนเร่งด่วน</p>
+            <AlertTriangle className="h-4 w-4 text-[#D6A84F]" />
+            <p className="text-xs font-bold text-white">แจ้งเตือนเร่งด่วน</p>
           </div>
-          <p className="mt-1 text-2xl font-extrabold">
-            {urgentCount} <span className="text-xs font-medium text-slate-300">รายการ</span>
+          <p className="mt-1 text-2xl font-extrabold text-white">
+            {urgentCount} <span className="text-xs font-medium text-blue-200">รายการ</span>
           </p>
           <button
             onClick={() => handleNav("workorder")}
-            className="mt-2.5 w-full rounded-lg bg-white/15 py-1.5 text-[11px] font-bold backdrop-blur transition hover:bg-white/25 active:scale-95"
+            className="mt-2.5 w-full rounded-lg bg-white/15 py-1.5 text-[11px] font-bold text-white backdrop-blur transition hover:bg-[#D6A84F] hover:text-[#123B63] active:scale-95"
           >
             ตรวจสอบทันที
           </button>
@@ -123,13 +125,18 @@ export function Sidebar({ menuOpen, setMenuOpen, currentUser, onLogout }) {
             className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm animate-fade"
             onClick={() => setMenuOpen(false)}
           />
-          <div className="absolute inset-y-0 left-0 w-72 animate-fade bg-white p-4 shadow-2xl">
+          <div className="absolute inset-y-0 left-0 w-72 animate-fade bg-white p-4 shadow-2xl flex flex-col">
             <div className="mb-4 flex items-center justify-between border-b border-slate-100 pb-3">
-              <div className="flex items-center gap-2">
-                <span className="rounded-xl bg-indigo-600 p-2">
-                  <ShieldAlert className="h-4 w-4 text-white" />
-                </span>
-                <p className="text-sm font-extrabold text-slate-800">Facility & Safety</p>
+              <div className="flex items-center gap-2.5">
+                <img
+                  src="/mahidol-logo.png"
+                  alt="Mahidol University"
+                  className="h-8 w-auto rounded-md bg-white p-0.5 shadow-xs ring-1 ring-slate-200"
+                />
+                <div>
+                  <p className="text-xs font-black text-[#123B63]">Facility &amp; Safety</p>
+                  <p className="text-[10px] text-[#D6A84F] font-semibold">งานพันธกิจเพื่อสังคม</p>
+                </div>
               </div>
               <button
                 onClick={() => setMenuOpen(false)}
@@ -138,7 +145,7 @@ export function Sidebar({ menuOpen, setMenuOpen, currentUser, onLogout }) {
                 <X className="h-5 w-5" />
               </button>
             </div>
-            <div className="space-y-1.5">
+            <div className="space-y-1.5 flex-1 overflow-y-auto">
               {NAV_ITEMS.filter((n) => n.id !== "admin" || ["admin", "dean", "deputy_dean", "finance_head", "section_head"].includes(currentUser?.role)).map((n) => {
                 const Icon = n.icon;
                 const on = page === n.id;
@@ -148,13 +155,13 @@ export function Sidebar({ menuOpen, setMenuOpen, currentUser, onLogout }) {
                     onClick={() => handleNav(n.id)}
                     className={cx(
                       "flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition",
-                      on ? "bg-indigo-600 text-white" : "text-slate-600 hover:bg-slate-100"
+                      on ? "bg-[#123B63] text-white border-l-4 border-[#D6A84F]" : "text-slate-600 hover:bg-slate-100 hover:text-[#123B63]"
                     )}
                   >
-                    <Icon className="h-5 w-5 shrink-0" />
+                    <Icon className={cx("h-5 w-5 shrink-0", on ? "text-[#D6A84F]" : "text-slate-400")} />
                     <div>
                       <p className="text-sm font-bold">{n.name}</p>
-                      <p className={cx("text-[11px]", on ? "text-indigo-100" : "text-slate-400")}>
+                      <p className={cx("text-[11px]", on ? "text-blue-100" : "text-slate-400")}>
                         {n.desc}
                       </p>
                     </div>

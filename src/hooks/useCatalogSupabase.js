@@ -120,6 +120,15 @@ export function useCatalogSupabase(catalog, setCatalog, { workOrders = [], inspe
     return await persistCatalog(updated);
   }, [safeCatalog, persistCatalog]);
 
+  // ---- PERSONNEL ----
+  const handleSetPersonnel = useCallback(async (personnelList) => {
+    const updated = {
+      ...safeCatalog,
+      personnel: Array.isArray(personnelList) ? personnelList : []
+    };
+    return await persistCatalog(updated);
+  }, [safeCatalog, persistCatalog]);
+
   const categories = useMemo(() => getCategories(safeCatalog), [safeCatalog]);
   const allCategories = useMemo(() => getCategories(safeCatalog, { includeInactive: true }), [safeCatalog]);
   const buildings = useMemo(() => getBuildings(safeCatalog), [safeCatalog]);
@@ -127,6 +136,7 @@ export function useCatalogSupabase(catalog, setCatalog, { workOrders = [], inspe
   const vendors = useMemo(() => getVendors(safeCatalog), [safeCatalog]);
   const allVendors = useMemo(() => getVendors(safeCatalog, { includeInactive: true }), [safeCatalog]);
   const budget = safeCatalog?.budget || { total: 0, fiscalYear: 0 };
+  const personnel = safeCatalog?.personnel || [];
   const itemCounts = useMemo(() => countItemsByCategory(safeCatalog), [safeCatalog]);
   const integrity = useMemo(() => checkIntegrity(safeCatalog), [safeCatalog]);
   const itemsOf = useCallback((categoryId, opts) => getItems(safeCatalog, { categoryId, ...opts }), [safeCatalog]);
@@ -140,7 +150,7 @@ export function useCatalogSupabase(catalog, setCatalog, { workOrders = [], inspe
     categories, allCategories,
     buildings, allBuildings,
     vendors, allVendors,
-    budget, itemCounts, integrity,
+    budget, personnel, itemCounts, integrity,
     itemsOf, itemById, categoryById, usageOf,
     partsTotal: itemPartsTotal,
     
@@ -166,6 +176,9 @@ export function useCatalogSupabase(catalog, setCatalog, { workOrders = [], inspe
     
     // Budget
     updateBudget: handleUpdateBudget,
+
+    // Personnel
+    setPersonnel: handleSetPersonnel,
     
     // Work orders and inspections for reference
     workOrders,

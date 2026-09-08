@@ -35,11 +35,18 @@ function WorkOrderCard({ wo, onStatus, onProcure, highlight, buildings, categori
   const statusColor = getColor(statusObj.color);
   const StatusIcon = getIcon(statusObj.icon || "Wrench");
 
-  // Sum items: support both it.price and it.unitPrice
-  const totalAmount = (wo.items || []).reduce(
+  // Calculate full cost breakdown: Parts + Labor + Service
+  const partsCost = (wo.items || []).reduce(
     (sum, it) => sum + (Number(it.qty) || 1) * (Number(it.unitPrice ?? it.price) || 0),
     0
   );
+  const laborCost = Number(wo.laborCost) || 0;
+  const serviceCost = Number(wo.serviceCost) || 0;
+  const grandTotal = Number(wo.total) > 0 ? Number(wo.total) : (partsCost + laborCost + serviceCost);
+
+  const maintenanceType = wo.maintenanceType || (wo.type === "pm" || wo.title?.includes("บำรุงรักษา") ? "pm" : "cm");
+  const isPM = maintenanceType === "pm";
+  const technician = wo.assignedTechnician || wo.technician || wo.responsiblePerson;
 
   return (
     <div
@@ -65,6 +72,15 @@ function WorkOrderCard({ wo, onStatus, onProcure, highlight, buildings, categori
                   >
                     {prio.label}
                   </Badge>
+                  {isPM ? (
+                    <Badge className="border-teal-200 bg-teal-50 text-teal-700 font-bold">
+                      PM เชิงป้องกัน
+                    </Badge>
+                  ) : (
+                    <Badge className="border-purple-200 bg-purple-50 text-purple-700 font-bold">
+                      CM ซ่อมแซมแก้ไข
+                    </Badge>
+                  )}
                   <span className="font-mono text-[11px] text-slate-400">
                     {wo.number || wo.id}
                   </span>
@@ -82,15 +98,27 @@ function WorkOrderCard({ wo, onStatus, onProcure, highlight, buildings, categori
                   </span>
                   <span className="flex items-center gap-1">
                     <User className="h-3 w-3" />
-                    {wo.reporter || "-"}
+                    ผู้แจ้ง: {wo.reporter || "-"}
                   </span>
+                  {technician && (
+                    <span className="flex items-center gap-1 font-medium text-indigo-700">
+                      <Wrench className="h-3 w-3 text-indigo-500" />
+                      ช่าง: {technician}
+                    </span>
+                  )}
                   <span className="flex items-center gap-1">
                     <Calendar className="h-3 w-3" />
                     {thDate(wo.createdAt || wo.date)}
                   </span>
-                  <span className="flex items-center gap-1 font-semibold text-slate-600">
-                    <CircleDollarSign className="h-3 w-3" />
-                    {fmt(totalAmount)} บาท
+                  {wo.scheduledDate && (
+                    <span className="flex items-center gap-1 text-amber-700 font-medium">
+                      <Calendar className="h-3 w-3 text-amber-500" />
+                      กำหนดเสร็จ: {thDate(wo.scheduledDate)}
+                    </span>
+                  )}
+                  <span className="flex items-center gap-1 font-semibold text-slate-700">
+                    <CircleDollarSign className="h-3 w-3 text-emerald-600" />
+                    {fmt(grandTotal)} บาท
                   </span>
                 </p>
               </div>
@@ -242,13 +270,41 @@ function WorkOrderCard({ wo, onStatus, onProcure, highlight, buildings, categori
                         );
                       })}
                     </tbody>
-                    <tfoot className="bg-slate-50">
+                    <tfoot className="bg-slate-50 divide-y divide-slate-100 text-xs">
                       <tr>
-                        <td colSpan={3} className="px-3 py-2 text-right font-bold text-slate-600">
-                          รวมประมาณการ
+                        <td colSpan={3} className="px-3 py-1.5 text-right text-slate-500">
+                          รวมค่าวัสดุ/อะไหล่
+                        </td>
+                        <td className="px-3 py-1.5 text-right font-bold text-slate-700">
+                          {fmt(partsCost)} บาท
+                        </td>
+                      </tr>
+                      {laborCost > 0 && (
+                        <tr>
+                          <td colSpan={3} className="px-3 py-1.5 text-right text-slate-500">
+                            ค่าแรงช่าง/บุคลากร
+                          </td>
+                          <td className="px-3 py-1.5 text-right font-bold text-slate-700">
+                            {fmt(laborCost)} บาท
+                          </td>
+                        </tr>
+                      )}
+                      {serviceCost > 0 && (
+                        <tr>
+                          <td colSpan={3} className="px-3 py-1.5 text-right text-slate-500">
+                            ค่าบริการ/จ้างเหมาภายนอก
+                          </td>
+                          <td className="px-3 py-1.5 text-right font-bold text-slate-700">
+                            {fmt(serviceCost)} บาท
+                          </td>
+                        </tr>
+                      )}
+                      <tr className="bg-slate-100/80 font-bold">
+                        <td colSpan={3} className="px-3 py-2 text-right text-slate-700">
+                          รวมประมาณการทั้งสิ้น
                         </td>
                         <td className="px-3 py-2 text-right font-extrabold text-indigo-700">
-                          {fmt(totalAmount)} บาท
+                          {fmt(grandTotal)} บาท
                         </td>
                       </tr>
                     </tfoot>
@@ -349,6 +405,7 @@ export function WorkOrderPage() {
 
   const [filter, setFilter] = useState(-1); // -1 = All
   const [prio, setPrio] = useState("all");
+  const [maintType, setMaintType] = useState("all"); // "all" | "cm" | "pm"
   const [q, setQ] = useState("");
 
   const buildings = cat?.buildings || [];
@@ -359,8 +416,13 @@ export function WorkOrderPage() {
       .filter((w) => (filter === -1 ? true : w.status === filter))
       .filter((w) => (prio === "all" ? true : w.priority === prio))
       .filter((w) => {
+        if (maintType === "all") return true;
+        const type = w.maintenanceType || (w.type === "pm" || w.title?.includes("บำรุงรักษา") ? "pm" : "cm");
+        return type === maintType;
+      })
+      .filter((w) => {
         if (!q.trim()) return true;
-        const target = `${w.title || ""} ${w.number || w.id || ""} ${w.reporter || ""}`.toLowerCase();
+        const target = `${w.title || ""} ${w.number || w.id || ""} ${w.reporter || ""} ${w.assignedTechnician || ""} ${w.technician || ""}`.toLowerCase();
         return target.includes(q.toLowerCase());
       })
       .sort((a, b) => {
@@ -368,7 +430,7 @@ export function WorkOrderPage() {
         const rankB = PRIORITY[b.priority]?.weight ?? 0;
         return rankB - rankA || a.status - b.status;
       });
-  }, [workOrders, filter, prio, q]);
+  }, [workOrders, filter, prio, maintType, q]);
 
   const changeStatus = (id, nextStatus) => {
     if (nextStatus < 0 || nextStatus > 6) return;
@@ -457,6 +519,31 @@ export function WorkOrderPage() {
               )}
             >
               {o.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Maintenance Type filters */}
+        <p className="mb-2 mt-4 text-xs font-bold uppercase tracking-wide text-slate-400">
+          กรองตามประเภทงาน (CM / PM)
+        </p>
+        <div className="flex flex-wrap gap-2">
+          {[
+            { key: "all", label: "ทุกประเภทงาน" },
+            { key: "cm", label: "CM ซ่อมแซมแก้ไข" },
+            { key: "pm", label: "PM บำรุงรักษาเชิงป้องกัน" },
+          ].map((m) => (
+            <button
+              key={m.key}
+              onClick={() => setMaintType(m.key)}
+              className={cx(
+                "rounded-xl border-2 px-3 py-1.5 text-xs font-bold transition active:scale-95",
+                maintType === m.key
+                  ? "border-purple-600 bg-purple-600 text-white shadow-md"
+                  : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+              )}
+            >
+              {m.label}
             </button>
           ))}
         </div>

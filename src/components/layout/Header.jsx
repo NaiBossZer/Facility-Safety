@@ -25,7 +25,7 @@ export function Header({ setMenuOpen, currentUser, onLogout }) {
   const initials = userName.slice(0, 2);
 
   return (
-    <header className="no-print sticky top-0 z-30 border-b border-slate-200 bg-white/85 backdrop-blur-md">
+    <header className="no-print sticky top-[52px] z-30 border-b border-slate-200/80 bg-white/95 backdrop-blur-md">
       <div className="flex items-center justify-between gap-3 px-4 py-3.5 sm:px-6">
         {/* Left: Mobile hamburger & Page title */}
         <div className="flex min-w-0 items-center gap-3">
@@ -34,10 +34,10 @@ export function Header({ setMenuOpen, currentUser, onLogout }) {
             className="rounded-xl border border-slate-200 p-2 text-slate-600 transition hover:bg-slate-100 lg:hidden"
             aria-label="เปิดเมนู"
           >
-            <Menu className="h-5 w-5" />
+            <Menu className="h-5 w-5 text-[#123B63]" />
           </button>
           <div className="min-w-0">
-            <h1 className="truncate text-base font-extrabold text-slate-800 sm:text-lg">
+            <h1 className="truncate text-base font-extrabold text-[#123B63] sm:text-lg">
               {currentNav.name}
             </h1>
             <p className="truncate text-[11px] text-slate-400 sm:text-xs">
@@ -53,7 +53,7 @@ export function Header({ setMenuOpen, currentUser, onLogout }) {
             className="relative rounded-xl border border-slate-200 p-2.5 text-slate-600 transition hover:bg-slate-100 active:scale-95"
             title="ไปที่ Work Orders"
           >
-            <Bell className="h-4.5 w-4.5" />
+            <Bell className="h-4.5 w-4.5 text-[#123B63]" />
             {urgentCount > 0 && (
               <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-[10px] font-bold text-white ring-2 ring-white">
                 {urgentCount}
@@ -62,13 +62,13 @@ export function Header({ setMenuOpen, currentUser, onLogout }) {
           </button>
 
           {/* Logged in User Pill */}
-          <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 py-1 pl-1.5 pr-2 sm:py-1.5 sm:pr-3">
-            <span className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-lg bg-[#002D62] text-xs font-bold text-white shadow-sm">
+          <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 py-1 pl-1.5 pr-2 sm:py-1.5 sm:pr-3 shadow-2xs">
+            <span className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-lg bg-[#123B63] text-xs font-bold text-white shadow-xs border border-[#D6A84F]/40">
               {initials}
             </span>
             <div className="hidden sm:block leading-tight min-w-0">
               <p className="truncate text-xs font-bold text-slate-800">{userName}</p>
-              <p className="truncate text-[10px] text-slate-500">{userPos}</p>
+              <p className="truncate text-[10px] text-slate-500 font-medium">{userPos}</p>
             </div>
             {onLogout && (
               <button
