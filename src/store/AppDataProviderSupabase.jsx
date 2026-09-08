@@ -29,7 +29,6 @@ import {
   INITIAL_REFUEL_LOGS,
   INITIAL_MOWER_TRANSACTIONS,
   INITIAL_FUEL_PLANS,
-  MOWER_TANK_CONFIG,
 } from "../data/fuelData";
 
 const LOCAL_STORAGE_KEYS = {
@@ -535,6 +534,10 @@ export function AppDataProviderSupabase({ children }) {
     writeJSON(LOCAL_STORAGE_KEYS.fuelPlans, INITIAL_FUEL_PLANS);
     toast.info("คืนค่าข้อมูลเชื้อเพลิงตั้งต้นเรียบร้อย");
   }, [toast]);
+
+  // ---------- LEGACY NAV FALLBACKS (Dashboard.jsx old signatures) ----------
+  const goto = useCallback((nextPage) => setUi((u) => ({ ...u, page: nextPage })), [setUi]);
+  const setSelectedWO = useCallback(() => { /* handled via procurement state */ }, []);
 
   const value = useMemo(
     () => ({

@@ -19,25 +19,19 @@ import {
   ArrowUpRight,
   ArrowDownLeft,
   Search,
-  Filter,
   Download,
   Printer,
   ChevronRight,
   Sparkles,
-  Info,
   MapPin,
   Camera,
   ShieldCheck,
-  AlertCircle,
-  HelpCircle,
   BarChart3,
   X,
-  Upload,
 } from "lucide-react";
 import { useAppData } from "../store/AppDataProvider";
 import { Badge } from "../components/ui/Badge";
-import { StatCard } from "../components/ui/StatCard";
-import { cx, fmt, thDate } from "../lib/helpers";
+import { cx, fmt } from "../lib/helpers";
 import { MOWER_TANK_CONFIG } from "../data/fuelData";
 
 export function FuelManagementPage() {
@@ -204,6 +198,13 @@ export function FuelManagementPage() {
               className="flex items-center gap-1.5 rounded-xl bg-white/10 px-3.5 py-2.5 text-xs font-bold text-white backdrop-blur-md transition hover:bg-white/20 active:scale-95"
             >
               <Sparkles className="h-4 w-4 text-amber-300" /> วางแผนล่วงหน้า
+            </button>
+            <button
+              onClick={resetFuelData}
+              title="รีเซ็ตเป็นข้อมูลจริงตั้งต้น ส.ค. 2569"
+              className="rounded-xl border border-white/15 bg-white/5 px-2.5 py-2.5 text-[11px] font-semibold text-blue-200 hover:bg-white/15 hover:text-white transition active:scale-95"
+            >
+              คืนค่าตั้งต้น
             </button>
           </div>
         </div>
