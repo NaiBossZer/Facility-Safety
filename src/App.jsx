@@ -17,6 +17,7 @@ import { WorkOrderPage } from "./pages/WorkOrderPage";
 import { ProcurementPage } from "./pages/ProcurementPage";
 import { ReportsPage } from "./pages/ReportsPage";
 import { AdminPage } from "./pages/admin/AdminPage";
+import { FuelManagementPage } from "./pages/FuelManagementPage";
 
 export default function App() {
   const { page, setPage, migration } = useAppData();
@@ -78,6 +79,7 @@ export default function App() {
           {page === "dashboard" && <DashboardPage />}
           {page === "inspection" && <InspectionPage currentUser={currentUser} />}
           {page === "workorder" && <WorkOrderPage />}
+          {page === "fuel" && <FuelManagementPage />}
           {page === "procurement" && <ProcurementPage />}
           {page === "reports" && <ReportsPage />}
           {page === "admin" && canManage && <AdminPage onExit={() => setPage("dashboard")} />}

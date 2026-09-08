@@ -23,13 +23,26 @@ import { performMigration, getMigrationStatus } from "../lib/migrationToSupabase
 import { readJSON, writeJSON } from "../lib/storage";
 import { enqueueOutbox, removeOutbox, flushOutbox } from "../lib/outbox";
 import { enqueueNotification, flushNotifications } from "../lib/notificationService";
+import {
+  INITIAL_VEHICLES,
+  INITIAL_VEHICLE_TRIPS,
+  INITIAL_REFUEL_LOGS,
+  INITIAL_MOWER_TRANSACTIONS,
+  INITIAL_FUEL_PLANS,
+  MOWER_TANK_CONFIG,
+} from "../data/fuelData";
 
 const LOCAL_STORAGE_KEYS = {
   catalog: "fsa:v2:catalog",
   workOrders: "fsa:v2:workOrders", 
   inspections: "fsa:v2:inspections",
   ui: "fsa:v2:ui",
-  meta: "fsa:v2:meta"
+  meta: "fsa:v2:meta",
+  fuelMower: "fsa:v2:fuel_mower",
+  fuelVehicles: "fsa:v2:fuel_vehicles",
+  fuelTrips: "fsa:v2:fuel_trips",
+  fuelRefuel: "fsa:v2:fuel_refuel",
+  fuelPlans: "fsa:v2:fuel_plans",
 };
 
 const AppDataContext = createContext(null);
@@ -43,6 +56,13 @@ export function AppDataProviderSupabase({ children }) {
   const [inspections, setInspections] = useState([]);
   const [ui, setUi] = useState({ page: "dashboard", procureWO: null });
   const [meta, setMeta] = useState({ schemaVersion: 2, woCounter: 0, lastSavedAt: null });
+
+  // Fuel Data states (pre-seeded with Mahidol Lampang August 2569 actual records)
+  const [fuelVehicles, setFuelVehicles] = useState(() => readJSON(LOCAL_STORAGE_KEYS.fuelVehicles) || INITIAL_VEHICLES);
+  const [fuelMowerLogs, setFuelMowerLogs] = useState(() => readJSON(LOCAL_STORAGE_KEYS.fuelMower) || INITIAL_MOWER_TRANSACTIONS);
+  const [fuelVehicleTrips, setFuelVehicleTrips] = useState(() => readJSON(LOCAL_STORAGE_KEYS.fuelTrips) || INITIAL_VEHICLE_TRIPS);
+  const [fuelRefuelLogs, setFuelRefuelLogs] = useState(() => readJSON(LOCAL_STORAGE_KEYS.fuelRefuel) || INITIAL_REFUEL_LOGS);
+  const [fuelPlans, setFuelPlans] = useState(() => readJSON(LOCAL_STORAGE_KEYS.fuelPlans) || INITIAL_FUEL_PLANS);
   
   // Loading states
   const [loading, setLoading] = useState(true);
@@ -364,9 +384,157 @@ export function AppDataProviderSupabase({ children }) {
     window.location.reload();
   }, []);
 
-  // ---------- LEGACY NAV FALLBACKS (Dashboard.jsx old signatures) ----------
-  const goto = useCallback((nextPage) => setUi((u) => ({ ...u, page: nextPage })), [setUi]);
-  const setSelectedWO = useCallback(() => { /* handled via procurement state */ }, []);
+  // ---------- FUEL MANAGEMENT ACTIONS ----------
+  const addMowerTransaction = useCallback((tx) => {
+    setFuelMowerLogs((prev) => {
+      const currentBalance = prev.length > 0 ? prev[prev.length - 1].balanceLiters : 0;
+      const dep = Number(tx.depositLiters) || 0;
+      const wit = Number(tx.withdrawLiters) || 0;
+      const newBalance = Math.max(0, currentBalance + dep - wit);
+      const newTx = {
+        id: "mw-tx-" + Date.now(),
+        date: tx.date || new Date().toISOString().slice(0, 10),
+        type: dep > 0 ? "deposit" : "withdraw",
+        depositLiters: dep,
+        withdrawLiters: wit,
+        balanceLiters: newBalance,
+        requestedBy: tx.requestedBy || "เจ้าหน้าที่",
+        purpose: tx.purpose || "-",
+        receiptAttachment: tx.receiptAttachment || null,
+        receiptNo: tx.receiptNo || "-",
+        totalAmount: Number(tx.totalAmount) || 0,
+      };
+      const updated = [...prev, newTx];
+      writeJSON(LOCAL_STORAGE_KEYS.fuelMower, updated);
+      return updated;
+    });
+    toast.success("บันทึกรายการคลังน้ำมันเครื่องตัดหญ้าเรียบร้อย");
+  }, [toast]);
+
+  const addVehicleTrip = useCallback((trip) => {
+    const sOdo = Number(trip.startOdo) || 0;
+    const eOdo = Number(trip.endOdo) || 0;
+    const distance = Math.max(0, eOdo - sOdo);
+    const newTrip = {
+      id: "trip-" + Date.now(),
+      vehicleId: trip.vehicleId || "veh-01",
+      date: trip.date || new Date().toISOString().slice(0, 10),
+      route: trip.route || "-",
+      startOdo: sOdo,
+      endOdo: eOdo,
+      distanceKm: distance,
+      driver: trip.driver || "จตุพร",
+      purpose: trip.purpose || "-",
+      notes: trip.notes || "",
+    };
+
+    setFuelVehicleTrips((prev) => {
+      const updated = [...prev, newTrip];
+      writeJSON(LOCAL_STORAGE_KEYS.fuelTrips, updated);
+      return updated;
+    });
+
+    setFuelVehicles((prev) => {
+      const updated = prev.map((v) =>
+        v.id === newTrip.vehicleId && eOdo > v.currentOdometer
+          ? { ...v, currentOdometer: eOdo }
+          : v
+      );
+      writeJSON(LOCAL_STORAGE_KEYS.fuelVehicles, updated);
+      return updated;
+    });
+
+    toast.success(`บันทึกการเดินทางเรียบร้อย (ระยะทาง ${distance} กม.)`);
+  }, [toast]);
+
+  const addRefuelLog = useCallback((log) => {
+    const newLog = {
+      id: "refuel-" + Date.now(),
+      vehicleId: log.vehicleId || "veh-01",
+      date: log.date || new Date().toISOString().slice(0, 10),
+      odometerReading: Number(log.odometerReading) || 0,
+      volumeLiters: Number(log.volumeLiters) || 0,
+      pricePerLiter: Number(log.pricePerLiter) || 0,
+      totalAmount: Number(log.totalAmount) || 0,
+      driverName: log.driverName || "จตุพร",
+      paymentMethod: log.paymentMethod || "PTT Fleet Card",
+      receiptNo: log.receiptNo || "-",
+      stationName: log.stationName || "ปตท. สบปราบ ลำปาง",
+      receiptAttachment: log.receiptAttachment || null,
+      odometerImage: log.odometerImage || null,
+      notes: log.notes || "",
+    };
+    setFuelRefuelLogs((prev) => {
+      const updated = [...prev, newLog];
+      writeJSON(LOCAL_STORAGE_KEYS.fuelRefuel, updated);
+      return updated;
+    });
+    toast.success("บันทึกการเติมน้ำมันเรียบร้อย");
+  }, [toast]);
+
+  const addFuelPlan = useCallback((plan) => {
+    const newPlan = {
+      id: "plan-" + Date.now(),
+      month: plan.month || new Date().toISOString().slice(0, 7),
+      targetType: plan.targetType || "vehicle",
+      assetName: plan.assetName || "รถยนต์ราชการ",
+      targetDate: plan.targetDate || new Date().toISOString().slice(0, 10),
+      estimatedWorkUnit: Number(plan.estimatedWorkUnit) || 0,
+      unitLabel: plan.unitLabel || "กม.",
+      avgRate: Number(plan.avgRate) || 1,
+      estimatedLiters: Number(plan.estimatedLiters) || 0,
+      estimatedBudget: Number(plan.estimatedBudget) || 0,
+      actualWorkUnit: 0,
+      actualLiters: 0,
+      actualBudget: 0,
+      variancePercentage: 0,
+      status: "active",
+      varianceReason: "",
+    };
+    setFuelPlans((prev) => {
+      const updated = [...prev, newPlan];
+      writeJSON(LOCAL_STORAGE_KEYS.fuelPlans, updated);
+      return updated;
+    });
+    toast.success("บันทึกแผนการใช้น้ำมันล่วงหน้าเรียบร้อย");
+  }, [toast]);
+
+  const updateFuelPlanActual = useCallback((planId, actualWorkUnit, actualLiters, actualBudget, varianceReason) => {
+    setFuelPlans((prev) => {
+      const updated = prev.map((p) => {
+        if (p.id !== planId) return p;
+        const estL = Number(p.estimatedLiters) || 1;
+        const actL = Number(actualLiters) || 0;
+        const variancePct = Number((((actL - estL) / estL) * 100).toFixed(1));
+        return {
+          ...p,
+          actualWorkUnit: Number(actualWorkUnit) || 0,
+          actualLiters: actL,
+          actualBudget: Number(actualBudget) || 0,
+          variancePercentage: variancePct,
+          varianceReason: varianceReason || p.varianceReason || "",
+          status: "completed",
+        };
+      });
+      writeJSON(LOCAL_STORAGE_KEYS.fuelPlans, updated);
+      return updated;
+    });
+    toast.success("อัปเดตผลการใช้น้ำมันจริงเรียบร้อย");
+  }, [toast]);
+
+  const resetFuelData = useCallback(() => {
+    setFuelVehicles(INITIAL_VEHICLES);
+    setFuelMowerLogs(INITIAL_MOWER_TRANSACTIONS);
+    setFuelVehicleTrips(INITIAL_VEHICLE_TRIPS);
+    setFuelRefuelLogs(INITIAL_REFUEL_LOGS);
+    setFuelPlans(INITIAL_FUEL_PLANS);
+    writeJSON(LOCAL_STORAGE_KEYS.fuelVehicles, INITIAL_VEHICLES);
+    writeJSON(LOCAL_STORAGE_KEYS.fuelMower, INITIAL_MOWER_TRANSACTIONS);
+    writeJSON(LOCAL_STORAGE_KEYS.fuelTrips, INITIAL_VEHICLE_TRIPS);
+    writeJSON(LOCAL_STORAGE_KEYS.fuelRefuel, INITIAL_REFUEL_LOGS);
+    writeJSON(LOCAL_STORAGE_KEYS.fuelPlans, INITIAL_FUEL_PLANS);
+    toast.info("คืนค่าข้อมูลเชื้อเพลิงตั้งต้นเรียบร้อย");
+  }, [toast]);
 
   const value = useMemo(
     () => ({
@@ -381,6 +549,9 @@ export function AppDataProviderSupabase({ children }) {
       goto, setSelectedWO,
       // actions
       submitInspection, updateWorkOrderStatus, updateWorkOrder,
+      // fuel management data & actions
+      fuelVehicles, fuelMowerLogs, fuelVehicleTrips, fuelRefuelLogs, fuelPlans,
+      addMowerTransaction, addVehicleTrip, addRefuelLog, addFuelPlan, updateFuelPlanActual, resetFuelData,
       // system
       toasts, toast, dismiss,
       storage: {
@@ -405,6 +576,8 @@ export function AppDataProviderSupabase({ children }) {
       goto, setSelectedWO, restoreFromBackup,
       setPage, openProcurement, submitInspection,
       updateWorkOrderStatus, updateWorkOrder,
+      fuelVehicles, fuelMowerLogs, fuelVehicleTrips, fuelRefuelLogs, fuelPlans,
+      addMowerTransaction, addVehicleTrip, addRefuelLog, addFuelPlan, updateFuelPlanActual, resetFuelData,
       toasts, toast, dismiss, migrationStatus, runMigration, isMigrating, wipeAll, loading
     ]
   );

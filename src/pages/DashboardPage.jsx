@@ -16,6 +16,8 @@ import {
   Calendar,
   ArrowRight,
   CheckCircle2,
+  Fuel,
+  Car,
 } from "lucide-react";
 import { useAppData } from "../store/AppDataProvider";
 import { StatCard } from "../components/ui/StatCard";
@@ -34,6 +36,9 @@ export function DashboardPage() {
     openProcurement,
     cat,
     catalog,
+    fuelMowerLogs,
+    fuelVehicles,
+    fuelVehicleTrips,
   } = useAppData();
 
   const buildings = cat?.buildings || [];
@@ -104,6 +109,12 @@ export function DashboardPage() {
               className="flex items-center gap-2 rounded-xl border border-white/30 bg-white/10 px-4 py-2.5 text-sm font-bold text-white backdrop-blur transition hover:bg-white/20 active:scale-95"
             >
               <Wrench className="h-4 w-4" /> งานซ่อม
+            </button>
+            <button
+              onClick={() => setPage("fuel")}
+              className="flex items-center gap-2 rounded-xl bg-amber-400 px-4 py-2.5 text-sm font-bold text-slate-900 shadow-lg transition hover:bg-amber-300 active:scale-95"
+            >
+              <Fuel className="h-4 w-4" /> เชื้อเพลิง &amp; รถยนต์
             </button>
           </div>
         </div>
@@ -176,6 +187,30 @@ export function DashboardPage() {
             </div>
           }
         />
+      </div>
+
+      {/* Utility & Fuel Quick Highlight Card */}
+      <div className="rounded-3xl border border-blue-200 bg-gradient-to-r from-blue-900 via-indigo-950 to-slate-900 p-5 text-white shadow-lg flex flex-col md:flex-row items-center justify-between gap-4">
+        <div className="flex items-center gap-3.5">
+          <div className="rounded-2xl bg-amber-400 p-3 text-slate-950 shadow-md">
+            <Fuel className="h-6 w-6" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h3 className="text-base font-extrabold text-white">ระบบสาธารณูปโภค &amp; บริหารจัดการเชื้อเพลิง (Fuel Management)</h3>
+              <Badge className="bg-amber-400/20 text-amber-300 border-amber-400/30 text-[10px]">อัปเดต ส.ค. 2569</Badge>
+            </div>
+            <p className="text-xs text-blue-200 mt-0.5">
+              คลังถังกลางเครื่องตัดหญ้าคงเหลือ <span className="font-bold text-amber-300">95.0 ลิตร</span> • รถราชการ 6ฝ-0559 วิ่งสะสม <span className="font-bold text-white">505 กม.</span> (ประหยัดงบ Fleet Card 100%)
+            </p>
+          </div>
+        </div>
+        <button
+          onClick={() => setPage("fuel")}
+          className="flex items-center gap-1.5 rounded-xl bg-white px-4 py-2 text-xs font-bold text-slate-900 shadow-md transition hover:bg-blue-50 active:scale-95 whitespace-nowrap"
+        >
+          เปิดโมดูลเชื้อเพลิง &amp; วางแผน <ChevronRight className="h-4 w-4 text-blue-600" />
+        </button>
       </div>
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">

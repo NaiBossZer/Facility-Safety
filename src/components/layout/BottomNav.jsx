@@ -2,7 +2,7 @@
 // BottomNav.jsx — Mobile Bottom Navigation Bar
 // ============================================================
 import React from "react";
-import { LayoutDashboard, ClipboardCheck, Wrench, FileText } from "lucide-react";
+import { LayoutDashboard, ClipboardCheck, Wrench, Fuel, FileText } from "lucide-react";
 import { useAppData } from "../../store/AppDataProvider";
 import { cx } from "../../lib/helpers";
 
@@ -10,6 +10,7 @@ const ITEMS = [
   { id: "dashboard",   label: "ภาพรวม",   icon: LayoutDashboard },
   { id: "inspection",  label: "ตรวจเช็ค", icon: ClipboardCheck },
   { id: "workorder",   label: "งานซ่อม",   icon: Wrench },
+  { id: "fuel",        label: "เชื้อเพลิง", icon: Fuel },
   { id: "procurement", label: "เอกสาร",   icon: FileText },
 ];
 
@@ -23,7 +24,7 @@ export function BottomNav() {
 
   return (
     <nav className="no-print fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/95 backdrop-blur-md lg:hidden">
-      <div className="grid grid-cols-4">
+      <div className="grid grid-cols-5">
         {ITEMS.map((n) => {
           const Icon = n.icon;
           const on = page === n.id;

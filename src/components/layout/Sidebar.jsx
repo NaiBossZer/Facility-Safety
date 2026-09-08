@@ -13,6 +13,7 @@ import {
   X,
   LogOut,
   User,
+  Fuel,
 } from "lucide-react";
 import { useAppData } from "../../store/AppDataProvider";
 import { cx } from "../../lib/helpers";
@@ -21,6 +22,7 @@ export const NAV_ITEMS = [
   { id: "dashboard",   name: "Dashboard",            desc: "ภาพรวมระบบ",       icon: LayoutDashboard },
   { id: "inspection",  name: "Inspection Checklist", desc: "บันทึกแบบตรวจเช็ค (2 Tracks)", icon: ClipboardCheck },
   { id: "workorder",   name: "Work Orders",          desc: "ติดตามใบแจ้งซ่อม",  icon: Wrench },
+  { id: "fuel",        name: "Fuel & Fleet",         desc: "บริหารเชื้อเพลิง & วางแผน", icon: Fuel },
   { id: "procurement", name: "E-Procurement",        desc: "งพ.001 / งพ.003 (Word/PDF)", icon: FileText },
   { id: "reports",     name: "Official Reports",     desc: "รายงานประจำปี & สรุปผล PDF", icon: FileCheck2 },
   { id: "admin",       name: "Admin Console",        desc: "จัดการระบบ & แคตตาล็อก", icon: ShieldAlert },

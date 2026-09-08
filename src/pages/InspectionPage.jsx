@@ -24,6 +24,8 @@ import {
   X,
   PlusCircle,
   Settings2,
+  Fuel,
+  ArrowRight,
 } from "lucide-react";
 import { useAppData } from "../store/AppDataProvider";
 import { Badge } from "../components/ui/Badge";
@@ -424,6 +426,31 @@ export function InspectionPage({ currentUser }) {
           </div>
         </button>
       </div>
+
+      {/* Fuel & Fleet Quick Action Banner for Facility Continuity Track */}
+      {activeTrack === "facility_continuity" && (
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 rounded-2xl border border-amber-200 bg-gradient-to-r from-amber-50/90 via-white to-amber-50/40 p-4 shadow-sm animate-fade">
+          <div className="flex items-center gap-3">
+            <span className="rounded-xl bg-amber-500 p-2.5 text-slate-950 shadow-md">
+              <Fuel className="h-5 w-5" />
+            </span>
+            <div>
+              <p className="text-xs font-extrabold text-slate-900">
+                ระบบจัดการน้ำมันเครื่องตัดหญ้า (ถังกลาง) &amp; รถยนต์ 6ฝ-0559
+              </p>
+              <p className="text-[11px] text-slate-500">
+                ต้องการบันทึกเบิก-เติมน้ำมัน, บันทึกทริปเดินทาง หรือพยากรณ์การใช้เชื้อเพลิงล่วงหน้า?
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => setPage("fuel")}
+            className="flex items-center gap-1.5 rounded-xl bg-slate-900 px-3.5 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-slate-800 active:scale-95 whitespace-nowrap"
+          >
+            เปิดโมดูล Fuel Management <ArrowRight className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      )}
 
       {/* Building & Category Selector Card */}
       <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
