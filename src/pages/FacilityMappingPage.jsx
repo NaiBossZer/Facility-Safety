@@ -35,6 +35,9 @@ export function FacilityMappingPage({ currentUser, onNavigate }) {
   const [selectedBuildings, setSelectedBuildings] = useState([]);
   const [editingBuildingId, setEditingBuildingId] = useState("");
   const [buildingTypeDraft, setBuildingTypeDraft] = useState("");
+  const [editDescription, setEditDescription] = useState("");
+  const [editFrequency, setEditFrequency] = useState("");
+  const [editWeeks, setEditWeeks] = useState("");
 
   const admin = isAdmin(currentUser);
   const load = useCallback(async () => {
@@ -141,6 +144,68 @@ export function FacilityMappingPage({ currentUser, onNavigate }) {
     finally { setBusy(false); }
   };
 
+  const saveTaskDetails = async () => {
+    if (!admin || !selectedTask) return;
+    const weeks = editWeeks.split(",").map((value) => value.trim()).filter(Boolean);
+    if (weeks.some((value) => !/^\\d{2}-W[1-5]$/.test(value))) {
+      setMessage("รูปแบบสัปดาห์ไม่ถูกต้อง ใช้รูปแบบ 10-W1, 11-W4 เป็นต้น");
+      return;
+    }
+    setBusy(true); setMessage("");
+    const { error } = await supabase.from("facility_maintenance_tasks").update({
+      description: editDescription.trim(),
+      frequency_text: editFrequency.trim() || null,
+      planned_weeks: weeks,
+    }).eq("id", selectedTask.id);
+    if (error) setMessage(error.message);
+    else { setMessage("บันทึกการแก้ไขรายการแผนแล้ว"); setSelectedTask(null); await load(); }
+    setBusy(false);
+  };
+
+  const copyFiscalYearPlan = async () => {
+    if (!admin || !activePlan) return;
+    const nextYear = Number(window.prompt("ระบุปีงบประมาณใหม่ เช่น 2571", String(activePlan.fiscal_year + 1)));
+    if (!Number.isInteger(nextYear) || nextYear <= activePlan.fiscal_year) return;
+    const startYear = nextYear - 544;
+    const title = `แผนการบำรุงรักษา ปีงบประมาณ ${nextYear}`;
+    setBusy(true); setMessage("");
+    let newPlanId = null;
+    try {
+      const { data: newPlan, error: planError } = await supabase.from("facility_fiscal_year_plans").insert({
+        fiscal_year: nextYear, title, starts_on: `${startYear}-10-01`, ends_on: `${startYear + 1}-09-30`,
+        source_workbook: activePlan.source_workbook || null, source_sheet: activePlan.source_sheet || null,
+        source_metadata: { copied_from_fiscal_year: activePlan.fiscal_year },
+        copied_from_plan_id: activePlan.id, created_by: currentUser.id,
+      }).select("id").single();
+      if (planError) throw planError;
+      newPlanId = newPlan.id;
+      for (const group of activePlan.facility_maintenance_groups || []) {
+        const { data: newGroup, error: groupError } = await supabase.from("facility_maintenance_groups").insert({
+          plan_id: newPlan.id, source_number: group.source_number, name: group.name, sort_order: group.source_number,
+        }).select("id").single();
+        if (groupError) throw groupError;
+        for (const task of group.facility_maintenance_tasks || []) {
+          const { data: newTask, error: taskError } = await supabase.from("facility_maintenance_tasks").insert({
+            group_id: newGroup.id, source_row: task.source_row, description: task.description,
+            frequency_text: task.frequency_text, planned_weeks: task.planned_weeks || [],
+            source_note: task.source_note, sort_order: task.sort_order,
+          }).select("id").single();
+          if (taskError) throw taskError;
+          const links = (task.facility_maintenance_task_buildings || []).map((link) => ({ task_id: newTask.id, building_id: link.building_id }));
+          if (links.length) {
+            const { error: linkError } = await supabase.from("facility_maintenance_task_buildings").insert(links);
+            if (linkError) throw linkError;
+          }
+        }
+      }
+      setMessage(`คัดลอกแผนเป็นปีงบประมาณ ${nextYear} แล้ว สามารถแก้ไขเวอร์ชันใหม่ได้โดยไม่เปลี่ยนแผนต้นฉบับ`);
+      await load();
+    } catch (error) {
+      if (newPlanId) await supabase.from("facility_fiscal_year_plans").delete().eq("id", newPlanId);
+      setMessage(`คัดลอกแผนไม่สำเร็จ: ${error.message}`);
+    } finally { setBusy(false); }
+  };
+
   const startInspection = (buildingId) => {
     if (!buildingId) return;
     const url = new URL(window.location.href);
@@ -169,7 +234,7 @@ export function FacilityMappingPage({ currentUser, onNavigate }) {
           <select value={planId} onChange={(e) => setPlanId(e.target.value)} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold">
             {plans.length ? plans.map((plan) => <option key={plan.id} value={plan.id}>ปีงบประมาณ {plan.fiscal_year}</option>) : <option value="">ยังไม่มีแผน</option>}
           </select>
-          <button onClick={() => void load()} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700"><RefreshCw size={16}/> รีเฟรช</button>
+          <button onClick={() => void load()} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700"><RefreshCw size={16}/> รีเฟรช</button>\n          {admin && activePlan && <button disabled={busy} onClick={() => void copyFiscalYearPlan()} className="rounded-xl border border-[#123B63] px-3 py-2 text-sm font-bold text-[#123B63] disabled:opacity-50">คัดลอกเป็นปีใหม่</button>}
           {admin && !plans.some((p) => p.fiscal_year === 2570) && (
             <button disabled={busy} onClick={() => void importPlan()} className="inline-flex items-center gap-2 rounded-xl bg-[#123B63] px-4 py-2 text-sm font-bold text-white disabled:opacity-50"><Upload size={16}/> นำเข้าแผน FY2570</button>
           )}
@@ -233,7 +298,7 @@ export function FacilityMappingPage({ currentUser, onNavigate }) {
         <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white p-5 shadow-2xl">
           <div className="flex items-start justify-between gap-4"><div><p className="text-xs font-bold text-[#B58A36]">{selectedTask.groupName}</p><h2 className="mt-1 text-xl font-black text-[#123B63]">รายละเอียดรายการแผน</h2></div><button onClick={() => setSelectedTask(null)} className="rounded-lg p-2 hover:bg-slate-100"><X size={18}/></button></div>
           <p className="mt-4 font-semibold text-slate-800">{selectedTask.description}</p>
-          <div className="mt-3 rounded-xl bg-slate-50 p-3 text-sm text-slate-600"><p>ความถี่: {selectedTask.frequency_text || "ไม่ได้ระบุในต้นฉบับ"}</p><p className="mt-1">สัปดาห์ที่วางแผน: {getTaskWeeks(selectedTask, MONTHS[monthIndex].key).join(", ") || "—"}</p>{selectedTask.source_note && <p className="mt-1">หมายเหตุ: {selectedTask.source_note}</p>}</div>
+          <div className="mt-3 rounded-xl bg-slate-50 p-3 text-sm text-slate-600"><p>ความถี่: {selectedTask.frequency_text || "ไม่ได้ระบุในต้นฉบับ"}</p><p className="mt-1">สัปดาห์ที่วางแผน: {getTaskWeeks(selectedTask, MONTHS[monthIndex].key).join(", ") || "—"}</p>{selectedTask.source_note && <p className="mt-1">หมายเหตุ: {selectedTask.source_note}</p>}</div>\n          {admin && <div className="mt-4 space-y-2 rounded-xl border border-slate-200 p-3"><p className="text-sm font-extrabold text-[#123B63]">แก้ไขรายการในแผนปีนี้</p><label className="block text-xs font-bold text-slate-600">รายละเอียด<input value={editDescription} onChange={(e)=>setEditDescription(e.target.value)} className="mt-1 w-full rounded-lg border p-2 text-sm"/></label><label className="block text-xs font-bold text-slate-600">ความถี่<input value={editFrequency} onChange={(e)=>setEditFrequency(e.target.value)} placeholder="เว้นว่างหากต้นฉบับไม่ระบุ" className="mt-1 w-full rounded-lg border p-2 text-sm"/></label><label className="block text-xs font-bold text-slate-600">สัปดาห์ที่วางแผน (คั่นด้วย comma)<input value={editWeeks} onChange={(e)=>setEditWeeks(e.target.value)} className="mt-1 w-full rounded-lg border p-2 text-sm" placeholder="10-W1, 11-W4"/></label><button disabled={busy||!editDescription.trim()} onClick={()=>void saveTaskDetails()} className="rounded-lg bg-[#123B63] px-3 py-2 text-xs font-bold text-white">บันทึกการแก้ไขรายการ</button></div>}
           <div className="mt-5"><h3 className="text-sm font-extrabold text-slate-800">ขอบเขตอาคารที่เกี่ยวข้อง</h3><p className="mt-1 text-xs text-slate-500">ไม่เลือกอาคาร = งานส่วนกลาง · เลือกได้หลายอาคาร</p>
             <div className="mt-2 max-h-40 space-y-2 overflow-y-auto rounded-xl border p-3">{buildings.map((building) => <label key={building.id} className="flex items-center gap-2 text-sm"><input type="checkbox" checked={selectedBuildings.includes(building.id)} disabled={!admin} onChange={(e) => setSelectedBuildings((list) => e.target.checked ? [...list, building.id] : list.filter((id) => id !== building.id))}/>{building.name}</label>)}{!buildings.length && <p className="text-sm text-slate-500">ยังไม่มีทะเบียนอาคาร</p>}</div>
           </div>
