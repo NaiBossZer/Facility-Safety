@@ -142,7 +142,7 @@ AS $$
   SELECT lower(coalesce(
     (
       SELECT CASE
-        WHEN sp.central_role IN ('SUPER_ADMIN', 'FACILITY_ADMIN') THEN sp.central_role
+        WHEN sp.central_role IN ('SUPER_ADMIN', 'FACILITY_ADMIN', 'CONTENT_ADMIN', 'OPERATIONS_ADMIN') THEN sp.central_role
         ELSE sp.role
       END
       FROM public.staff_profiles sp
@@ -167,7 +167,7 @@ SECURITY DEFINER
 SET search_path = public, auth
 AS $$
   SELECT public.facility_user_role() IN (
-    'super_admin', 'facility_admin', 'admin', 'dean', 'deputy_dean', 'section_head'
+    'super_admin', 'facility_admin', 'admin'
   );
 $$;
 
@@ -180,7 +180,7 @@ SET search_path = public, auth
 AS $$
   SELECT public.facility_user_role() IN (
     'safety_officer', 'safety officer',
-    'super_admin', 'facility_admin', 'admin', 'dean', 'deputy_dean', 'section_head'
+    'super_admin', 'facility_admin', 'admin'
   );
 $$;
 
