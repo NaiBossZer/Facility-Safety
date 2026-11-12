@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { CalendarDays, ChevronLeft, ChevronRight, ClipboardCheck, Building2, Upload, RefreshCw, X, MapPin, ListFilter, ShieldCheck } from "lucide-react";
+import { CalendarDays, ChevronLeft, ChevronRight, ClipboardCheck, Building2, Upload, RefreshCw, X, ShieldCheck } from "lucide-react";
 import { supabase } from "../lib/supabaseClient";
 import fy2570Source from "../data/facilityMaintenanceFY2570.json";
 
@@ -23,7 +23,6 @@ export function FacilityMappingPage({ currentUser, onNavigate }) {
   const [tab, setTab] = useState("overview");
   const [plans, setPlans] = useState([]);
   const [planId, setPlanId] = useState("");
-  const [groups, setGroups] = useState([]);
   const [buildings, setBuildings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
