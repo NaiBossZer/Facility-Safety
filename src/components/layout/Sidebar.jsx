@@ -25,6 +25,7 @@ export const NAV_ITEMS = [
   { id: "facility-mapping", name: "Facility Mapping", desc: "แผนบำรุงรักษาและตรวจอาคาร", icon: MapPinned },
   { id: "facility-templates", name: "Checklist Templates", desc: "แม่แบบตรวจตามประเภทอาคาร", icon: ClipboardCheck },
   { id: "facility-assignments", name: "Inspector Assignments", desc: "มอบหมายผู้ตรวจตามอาคาร", icon: Users },
+  { id: "facility-review", name: "Inspection Review", desc: "ทบทวนผลโดย Safety Officer", icon: ShieldCheck },
   { id: "workorder",   name: "Work Orders",          desc: "ติดตามใบแจ้งซ่อม",  icon: Wrench },
   { id: "fuel",        name: "Fuel & Fleet",         desc: "บริหารเชื้อเพลิง & วางแผน", icon: Fuel },
   { id: "procurement", name: "E-Procurement",        desc: "งพ.001 / งพ.003 (Word/PDF)", icon: FileText },
