@@ -1,6 +1,6 @@
--- Facility Mapping operational schema: FY plans, typed checklists, assignments,
--- binary inspection item results, and private photo evidence.
--- Intentionally not applied to Supabase production from this change.
+-- Facility Mapping operational schema: maintenance plans, typed checklists,
+-- assigned inspectors, inspection records, review notes, and private photo evidence.
+-- This migration is committed for review; it has NOT been applied to production.
 
 ALTER TABLE public.buildings
   ADD COLUMN IF NOT EXISTS building_type TEXT;
@@ -77,70 +77,6 @@ CREATE TABLE IF NOT EXISTS public.facility_checklist_template_items (
 CREATE INDEX IF NOT EXISTS facility_checklist_items_template_idx
   ON public.facility_checklist_template_items(template_id, sort_order);
 
-CREATE OR REPLACE FUNCTION public.guard_facility_checklist_template_item_changes()
-RETURNS TRIGGER
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public
-AS $
-DECLARE
-  target_template_id UUID;
-  template_active BOOLEAN;
-  template_used BOOLEAN;
-BEGIN
-  target_template_id := CASE WHEN TG_OP = 'DELETE' THEN OLD.template_id ELSE NEW.template_id END;
-  SELECT t.is_active,
-         EXISTS (SELECT 1 FROM public.facility_inspection_records i WHERE i.template_id = t.id)
-    INTO template_active, template_used
-  FROM public.facility_checklist_templates t
-  WHERE t.id = target_template_id;
-
-  IF coalesce(template_active, false) OR coalesce(template_used, false) THEN
-    RAISE EXCEPTION 'Checklist versions are immutable once activated or used; create a new version instead';
-  END IF;
-
-  IF TG_OP = 'DELETE' THEN RETURN OLD; END IF;
-  RETURN NEW;
-END;
-$;
-
-DROP TRIGGER IF EXISTS facility_checklist_template_items_immutable
-  ON public.facility_checklist_template_items;
-CREATE TRIGGER facility_checklist_template_items_immutable
-  BEFORE INSERT OR UPDATE OR DELETE ON public.facility_checklist_template_items
-  FOR EACH ROW EXECUTE FUNCTION public.guard_facility_checklist_template_item_changes();
-
-CREATE OR REPLACE FUNCTION public.guard_facility_checklist_template_changes()
-RETURNS TRIGGER
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public
-AS $
-BEGIN
-  IF TG_OP = 'UPDATE' AND NEW.is_active AND NOT OLD.is_active
-     AND NOT EXISTS (SELECT 1 FROM public.facility_checklist_template_items i WHERE i.template_id = NEW.id) THEN
-    RAISE EXCEPTION 'A checklist template must contain at least one item before activation';
-  END IF;
-  IF TG_OP = 'UPDATE' AND (
-    EXISTS (SELECT 1 FROM public.facility_inspection_records i WHERE i.template_id = OLD.id)
-    OR OLD.is_active
-  ) AND (
-    NEW.building_type IS DISTINCT FROM OLD.building_type
-    OR NEW.name IS DISTINCT FROM OLD.name
-    OR NEW.version IS DISTINCT FROM OLD.version
-  ) THEN
-    RAISE EXCEPTION 'A checklist version cannot be renamed or changed after activation/use; create a new version';
-  END IF;
-  RETURN NEW;
-END;
-$;
-
-DROP TRIGGER IF EXISTS facility_checklist_templates_immutable
-  ON public.facility_checklist_templates;
-CREATE TRIGGER facility_checklist_templates_immutable
-  BEFORE UPDATE ON public.facility_checklist_templates
-  FOR EACH ROW EXECUTE FUNCTION public.guard_facility_checklist_template_changes();
-
 CREATE TABLE IF NOT EXISTS public.facility_building_inspector_assignments (
   building_id TEXT NOT NULL REFERENCES public.buildings(id) ON DELETE CASCADE,
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -163,6 +99,7 @@ CREATE TABLE IF NOT EXISTS public.facility_inspection_records (
   reviewer_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
   reviewed_at TIMESTAMPTZ,
   review_notes TEXT,
+  risk_assessment TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
@@ -182,13 +119,16 @@ CREATE TABLE IF NOT EXISTS public.facility_inspection_item_results (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   UNIQUE (inspection_id, template_item_id),
   CHECK (cardinality(evidence_paths) <= 2),
-  CHECK (result <> 'fail' OR (length(btrim(coalesce(remark, ''))) > 0 AND cardinality(evidence_paths) BETWEEN 1 AND 2))
+  CHECK (
+    result <> 'fail'
+    OR (length(btrim(coalesce(remark, ''))) > 0 AND cardinality(evidence_paths) BETWEEN 1 AND 2)
+  )
 );
 CREATE INDEX IF NOT EXISTS facility_inspection_item_results_inspection_idx
   ON public.facility_inspection_item_results(inspection_id);
 
--- Resolve a user's facility role from the authenticated profile. Central roles
--- remain distinct; Operations/Content administrators are not promoted to facility admin.
+-- Central role claims remain distinct. Content/Operations admins do not become
+-- Facility Admin unless their central role explicitly grants it.
 CREATE OR REPLACE FUNCTION public.facility_user_role()
 RETURNS TEXT
 LANGUAGE SQL
@@ -197,14 +137,21 @@ SECURITY DEFINER
 SET search_path = public, auth
 AS $$
   SELECT lower(coalesce(
-    (SELECT CASE
-      WHEN sp.central_role IN ('SUPER_ADMIN', 'FACILITY_ADMIN') THEN sp.central_role
-      ELSE sp.role
-    END
-    FROM public.staff_profiles sp
-    WHERE sp.user_id = auth.uid() AND sp.active IS DISTINCT FROM false
-    LIMIT 1),
-    (SELECT sp.central_role FROM public.staff_profiles sp WHERE sp.user_id = auth.uid() AND sp.active IS DISTINCT FROM false LIMIT 1),
+    (
+      SELECT CASE
+        WHEN sp.central_role IN ('SUPER_ADMIN', 'FACILITY_ADMIN') THEN sp.central_role
+        ELSE sp.role
+      END
+      FROM public.staff_profiles sp
+      WHERE sp.user_id = auth.uid() AND sp.active IS DISTINCT FROM false
+      LIMIT 1
+    ),
+    (
+      SELECT sp.central_role
+      FROM public.staff_profiles sp
+      WHERE sp.user_id = auth.uid() AND sp.active IS DISTINCT FROM false
+      LIMIT 1
+    ),
     public.app_role()
   ));
 $$;
@@ -216,7 +163,9 @@ STABLE
 SECURITY DEFINER
 SET search_path = public, auth
 AS $$
-  SELECT public.facility_user_role() IN ('super_admin', 'facility_admin', 'admin', 'dean', 'deputy_dean', 'section_head');
+  SELECT public.facility_user_role() IN (
+    'super_admin', 'facility_admin', 'admin', 'dean', 'deputy_dean', 'section_head'
+  );
 $$;
 
 CREATE OR REPLACE FUNCTION public.facility_is_safety_officer()
@@ -226,7 +175,10 @@ STABLE
 SECURITY DEFINER
 SET search_path = public, auth
 AS $$
-  SELECT public.facility_user_role() IN ('safety_officer', 'safety officer', 'super_admin', 'facility_admin', 'admin', 'dean', 'deputy_dean', 'section_head');
+  SELECT public.facility_user_role() IN (
+    'safety_officer', 'safety officer',
+    'super_admin', 'facility_admin', 'admin', 'dean', 'deputy_dean', 'section_head'
+  );
 $$;
 
 CREATE OR REPLACE FUNCTION public.facility_can_inspect_building(target_building_id TEXT)
@@ -246,6 +198,188 @@ AS $$
       )
     );
 $$;
+
+-- Once a template is active or has inspection history, its items cannot be
+-- changed. Admins must create a new version so old inspections stay meaningful.
+CREATE OR REPLACE FUNCTION public.guard_facility_checklist_template_item_changes()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  target_template_id UUID;
+  template_active BOOLEAN;
+  template_used BOOLEAN;
+BEGIN
+  target_template_id := CASE WHEN TG_OP = 'DELETE' THEN OLD.template_id ELSE NEW.template_id END;
+  SELECT t.is_active,
+         EXISTS (SELECT 1 FROM public.facility_inspection_records i WHERE i.template_id = t.id)
+    INTO template_active, template_used
+  FROM public.facility_checklist_templates t
+  WHERE t.id = target_template_id;
+
+  IF coalesce(template_active, false) OR coalesce(template_used, false) THEN
+    RAISE EXCEPTION 'Checklist versions are immutable once activated or used; create a new version instead';
+  END IF;
+
+  IF TG_OP = 'DELETE' THEN RETURN OLD; END IF;
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS facility_checklist_template_items_immutable
+  ON public.facility_checklist_template_items;
+CREATE TRIGGER facility_checklist_template_items_immutable
+  BEFORE INSERT OR UPDATE OR DELETE ON public.facility_checklist_template_items
+  FOR EACH ROW EXECUTE FUNCTION public.guard_facility_checklist_template_item_changes();
+
+CREATE OR REPLACE FUNCTION public.guard_facility_checklist_template_changes()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  IF TG_OP = 'UPDATE' AND NEW.is_active AND NOT OLD.is_active
+     AND NOT EXISTS (
+       SELECT 1 FROM public.facility_checklist_template_items i WHERE i.template_id = NEW.id
+     ) THEN
+    RAISE EXCEPTION 'A checklist template must contain at least one item before activation';
+  END IF;
+
+  IF TG_OP = 'UPDATE' AND (
+    EXISTS (SELECT 1 FROM public.facility_inspection_records i WHERE i.template_id = OLD.id)
+    OR OLD.is_active
+  ) AND (
+    NEW.building_type IS DISTINCT FROM OLD.building_type
+    OR NEW.name IS DISTINCT FROM OLD.name
+    OR NEW.version IS DISTINCT FROM OLD.version
+  ) THEN
+    RAISE EXCEPTION 'A checklist version cannot be renamed or changed after activation/use; create a new version';
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS facility_checklist_templates_immutable
+  ON public.facility_checklist_templates;
+CREATE TRIGGER facility_checklist_templates_immutable
+  BEFORE UPDATE ON public.facility_checklist_templates
+  FOR EACH ROW EXECUTE FUNCTION public.guard_facility_checklist_template_changes();
+
+CREATE OR REPLACE FUNCTION public.validate_facility_inspection_record()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  building_type_value TEXT;
+  template_type_value TEXT;
+  template_version_value INTEGER;
+  expected_items INTEGER;
+  saved_items INTEGER;
+BEGIN
+  SELECT building_type INTO building_type_value
+  FROM public.buildings WHERE id = NEW.building_id;
+  SELECT building_type, version INTO template_type_value, template_version_value
+  FROM public.facility_checklist_templates WHERE id = NEW.template_id;
+
+  IF building_type_value IS NULL OR template_type_value IS DISTINCT FROM building_type_value THEN
+    RAISE EXCEPTION 'The selected checklist template does not match the building type';
+  END IF;
+  IF template_version_value IS DISTINCT FROM NEW.template_version THEN
+    RAISE EXCEPTION 'The inspection template version does not match the selected template';
+  END IF;
+
+  IF NEW.status = 'submitted' THEN
+    SELECT count(*) INTO expected_items
+    FROM public.facility_checklist_template_items WHERE template_id = NEW.template_id;
+    SELECT count(*) INTO saved_items
+    FROM public.facility_inspection_item_results WHERE inspection_id = NEW.id;
+    IF expected_items = 0 OR saved_items <> expected_items THEN
+      RAISE EXCEPTION 'Every checklist item must have a result before submission';
+    END IF;
+  END IF;
+
+  IF NEW.status = 'reviewed' AND NOT public.facility_is_safety_officer() THEN
+    RAISE EXCEPTION 'Only a Safety Officer may mark an inspection as reviewed';
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS facility_inspection_record_validate
+  ON public.facility_inspection_records;
+CREATE TRIGGER facility_inspection_record_validate
+  BEFORE INSERT OR UPDATE ON public.facility_inspection_records
+  FOR EACH ROW EXECUTE FUNCTION public.validate_facility_inspection_record();
+
+-- Validate the remark, evidence count, checklist/template relationship, and
+-- existence/MIME type of every private Storage object on every item write.
+CREATE OR REPLACE FUNCTION public.validate_facility_inspection_item_result()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, storage
+AS $$
+DECLARE
+  parent_inspection public.facility_inspection_records%ROWTYPE;
+  expected_template_id UUID;
+  evidence_path TEXT;
+  evidence_mime TEXT;
+BEGIN
+  SELECT * INTO parent_inspection
+  FROM public.facility_inspection_records
+  WHERE id = NEW.inspection_id;
+
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Inspection record not found';
+  END IF;
+
+  SELECT template_id INTO expected_template_id
+  FROM public.facility_checklist_template_items
+  WHERE id = NEW.template_item_id;
+
+  IF expected_template_id IS NULL OR expected_template_id <> parent_inspection.template_id THEN
+    RAISE EXCEPTION 'Checklist item does not belong to the inspection template';
+  END IF;
+
+  IF NEW.result = 'fail' AND length(btrim(coalesce(NEW.remark, ''))) = 0 THEN
+    RAISE EXCEPTION 'A problem description is required for failed items';
+  END IF;
+
+  IF cardinality(NEW.evidence_paths) > 2
+     OR (NEW.result = 'fail' AND cardinality(NEW.evidence_paths) < 1) THEN
+    RAISE EXCEPTION 'Failed items require one or two photo evidence files';
+  END IF;
+
+  FOREACH evidence_path IN ARRAY NEW.evidence_paths LOOP
+    IF evidence_path !~ (
+      '^' || NEW.inspection_id::text || '/' || NEW.template_item_id::text || '/[^/]+$'
+    ) THEN
+      RAISE EXCEPTION 'Invalid evidence file path';
+    END IF;
+
+    SELECT metadata->>'mimetype' INTO evidence_mime
+    FROM storage.objects
+    WHERE bucket_id = 'facility-inspection-evidence' AND name = evidence_path;
+
+    IF evidence_mime NOT IN ('image/jpeg', 'image/png', 'image/webp') THEN
+      RAISE EXCEPTION 'Evidence file is missing or is not an allowed image type';
+    END IF;
+  END LOOP;
+
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS facility_inspection_item_result_validate
+  ON public.facility_inspection_item_results;
+CREATE TRIGGER facility_inspection_item_result_validate
+  BEFORE INSERT OR UPDATE ON public.facility_inspection_item_results
+  FOR EACH ROW EXECUTE FUNCTION public.validate_facility_inspection_item_result();
 
 ALTER TABLE public.facility_fiscal_year_plans ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.facility_maintenance_groups ENABLE ROW LEVEL SECURITY;
@@ -294,7 +428,9 @@ CREATE POLICY facility_checklist_items_manage ON public.facility_checklist_templ
   WITH CHECK (public.facility_is_admin());
 
 CREATE POLICY facility_assignments_read ON public.facility_building_inspector_assignments
-  FOR SELECT TO authenticated USING (user_id = auth.uid() OR public.facility_is_admin() OR public.facility_is_safety_officer());
+  FOR SELECT TO authenticated USING (
+    user_id = auth.uid() OR public.facility_is_admin() OR public.facility_is_safety_officer()
+  );
 CREATE POLICY facility_assignments_manage ON public.facility_building_inspector_assignments
   FOR ALL TO authenticated USING (public.facility_is_admin())
   WITH CHECK (public.facility_is_admin());
@@ -342,7 +478,7 @@ CREATE POLICY facility_inspection_results_write ON public.facility_inspection_it
     )
   );
 
--- Private evidence bucket. Object names follow: <inspection_uuid>/<item_uuid>/<file>.
+-- Evidence is private; object paths are <inspection_uuid>/<template_item_uuid>/<file>.
 INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 VALUES (
   'facility-inspection-evidence',
@@ -394,130 +530,6 @@ CREATE POLICY facility_evidence_delete ON storage.objects
         AND public.facility_can_inspect_building(i.building_id)
     )
   );
-
-CREATE OR REPLACE FUNCTION public.validate_facility_inspection_record()
-RETURNS TRIGGER
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public
-AS $
-DECLARE
-  building_type_value TEXT;
-  template_type_value TEXT;
-  template_version_value INTEGER;
-  expected_items INTEGER;
-  saved_items INTEGER;
-BEGIN
-  SELECT building_type INTO building_type_value
-  FROM public.buildings WHERE id = NEW.building_id;
-  SELECT building_type, version INTO template_type_value, template_version_value
-  FROM public.facility_checklist_templates WHERE id = NEW.template_id;
-
-  IF building_type_value IS NULL OR template_type_value IS DISTINCT FROM building_type_value THEN
-    RAISE EXCEPTION 'The selected checklist template does not match the building type';
-  END IF;
-  IF template_version_value IS DISTINCT FROM NEW.template_version THEN
-    RAISE EXCEPTION 'The inspection template version does not match the selected template';
-  END IF;
-
-  IF NEW.status = 'submitted' THEN
-    SELECT count(*) INTO expected_items
-    FROM public.facility_checklist_template_items WHERE template_id = NEW.template_id;
-    SELECT count(*) INTO saved_items
-    FROM public.facility_inspection_item_results WHERE inspection_id = NEW.id;
-    IF expected_items = 0 OR saved_items <> expected_items THEN
-      RAISE EXCEPTION 'Every checklist item must have a result before submission';
-    END IF;
-  END IF;
-
-  IF NEW.status = 'reviewed' AND NOT public.facility_is_safety_officer() THEN
-    RAISE EXCEPTION 'Only a Safety Officer may mark an inspection as reviewed';
-  END IF;
-  RETURN NEW;
-END;
-$;
-
-DROP TRIGGER IF EXISTS facility_inspection_record_validate
-  ON public.facility_inspection_records;
-CREATE TRIGGER facility_inspection_record_validate
-  BEFORE INSERT OR UPDATE ON public.facility_inspection_records
-  FOR EACH ROW EXECUTE FUNCTION public.validate_facility_inspection_record();
-
-CREATE OR REPLACE FUNCTION public.validate_facility_inspection_item_result()
-RETURNS TRIGGER
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public, storage
-AS $
-DECLARE
-  parent_inspection public.facility_inspection_records%ROWTYPE;
-  expected_template_id UUID;
-  evidence_path TEXT;
-  evidence_mime TEXT;
-BEGIN
-  SELECT * INTO parent_inspection
-  FROM public.facility_inspection_records
-  WHERE id = NEW.inspection_id;
-
-  IF NOT FOUND THEN
-    RAISE EXCEPTION 'Inspection record not found';
-  END IF;
-
-  SELECT template_id INTO expected_template_id
-  FROM public.facility_checklist_template_items
-  WHERE id = NEW.template_item_id;
-
-  IF expected_template_id IS NULL OR expected_template_id <> parent_inspection.template_id THEN
-    RAISE EXCEPTION 'Checklist item does not belong to the inspection template';
-  END IF;
-
-  IF NEW.result = 'fail' AND length(btrim(coalesce(NEW.remark, ''))) = 0 THEN
-    RAISE EXCEPTION 'A problem description is required for failed items';
-  END IF;
-
-  IF cardinality(NEW.evidence_paths) > 2 OR
-     (NEW.result = 'fail' AND cardinality(NEW.evidence_paths) < 1) THEN
-    RAISE EXCEPTION 'Failed items require one or two photo evidence files';
-  END IF;
-
-  FOREACH evidence_path IN ARRAY NEW.evidence_paths LOOP
-    IF evidence_path !~ ('^' || NEW.inspection_id::text || '/' || NEW.template_item_id::text || '/[^/]+  public.facility_fiscal_year_plans,
-  public.facility_maintenance_groups,
-  public.facility_maintenance_tasks,
-  public.facility_maintenance_task_buildings,
-  public.facility_checklist_templates,
-  public.facility_checklist_template_items,
-  public.facility_building_inspector_assignments,
-  public.facility_inspection_records,
-  public.facility_inspection_item_results
-TO authenticated;
-
-COMMENT ON TABLE public.facility_maintenance_tasks IS
-  'Planning-only tasks imported from the FY2570 workbook. No automatic inspection or work-order creation.';
-COMMENT ON COLUMN public.facility_maintenance_tasks.planned_weeks IS
-  'Source orange-fill markers in M-W format, e.g. 10-W1. Frequency text is retained separately.';
-COMMENT ON TABLE public.facility_inspection_item_results IS
-  'Binary Pass/Fail results. Fail requires nonblank remark and 1-2 private image evidence paths.';
-) THEN
-      RAISE EXCEPTION 'Invalid evidence file path';
-    END IF;
-    SELECT metadata->>'mimetype' INTO evidence_mime
-    FROM storage.objects
-    WHERE bucket_id = 'facility-inspection-evidence' AND name = evidence_path;
-    IF evidence_mime NOT IN ('image/jpeg', 'image/png', 'image/webp') THEN
-      RAISE EXCEPTION 'Evidence file is missing or is not an allowed image type';
-    END IF;
-  END LOOP;
-
-  RETURN NEW;
-END;
-$;
-
-DROP TRIGGER IF EXISTS facility_inspection_item_result_validate
-  ON public.facility_inspection_item_results;
-CREATE TRIGGER facility_inspection_item_result_validate
-  BEFORE INSERT OR UPDATE ON public.facility_inspection_item_results
-  FOR EACH ROW EXECUTE FUNCTION public.validate_facility_inspection_item_result();
 
 GRANT SELECT, INSERT, UPDATE, DELETE ON
   public.facility_fiscal_year_plans,
