@@ -14,6 +14,9 @@ import {
   LogOut,
   User,
   Fuel,
+  MapPinned,
+  Users,
+  ShieldCheck,
 } from "lucide-react";
 import { useAppData } from "../../store/AppDataProvider";
 import { cx } from "../../lib/helpers";
