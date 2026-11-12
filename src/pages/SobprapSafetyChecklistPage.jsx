@@ -80,12 +80,13 @@ export function SobprapSafetyChecklistPage({ currentUser }) {
     ]);
     if (inspectionResult.error) setError("โหลดประวัติการตรวจไม่สำเร็จ: " + inspectionResult.error.message);
     else setInspections(inspectionResult.data || []);
-    if (actionResult.error) setError((prev) => prev ? prev + " | " : "" + "โหลดรายการติดตามไม่สำเร็จ: " + actionResult.error.message);
+    if (actionResult.error) setError((prev) => (prev ? prev + " | " : "") + "โหลดรายการติดตามไม่สำเร็จ: " + actionResult.error.message);
     else setActions(actionResult.data || []);
     setLoading(false);
   }, []);
 
   useEffect(() => { void loadRecords(); }, [loadRecords]);
+  useEffect(() => { if (tab !== "history") setSelectedInspection(null); }, [tab]);
 
   const setItemAnswer = (itemKey, patch) => {
     setAnswers((previous) => ({ ...previous, [itemKey]: { ...(previous[itemKey] || {}), ...patch } }));
@@ -119,6 +120,7 @@ export function SobprapSafetyChecklistPage({ currentUser }) {
     setSaving(true);
     const inspectionId = newId();
     const uploadedPaths = [];
+    let inspectionSaved = false;
     try {
       for (const file of files) {
         const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
@@ -143,6 +145,7 @@ export function SobprapSafetyChecklistPage({ currentUser }) {
         updated_by: currentUser.id,
       });
       if (insertError) throw insertError;
+      inspectionSaved = true;
 
       const failed = items.filter((item) => answers[item.key]?.status === "fail");
       if (failed.length) {
@@ -168,7 +171,7 @@ export function SobprapSafetyChecklistPage({ currentUser }) {
       setTab(failed.length ? "actions" : "history");
     } catch (saveError) {
       setError(saveError.message || "บันทึกผลตรวจไม่สำเร็จ");
-      if (uploadedPaths.length) await supabase.storage.from("safety-checklist-evidence").remove(uploadedPaths);
+      if (!inspectionSaved && uploadedPaths.length) await supabase.storage.from("safety-checklist-evidence").remove(uploadedPaths);
     } finally {
       setSaving(false);
     }
@@ -352,7 +355,6 @@ export function SobprapSafetyChecklistPage({ currentUser }) {
         </section>
       )}
 
-      {selectedInspection && tab !== "history" && setSelectedInspection(null)}
     </div>
   );
 }
