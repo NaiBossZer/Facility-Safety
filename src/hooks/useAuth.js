@@ -30,6 +30,8 @@ export function useAuth() {
       .maybeSingle();
 
     if (error) {
+      await supabase.auth.signOut();
+      setSession(null);
       setProfile(null);
       return false;
     }
