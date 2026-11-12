@@ -392,6 +392,12 @@ BEGIN
     RAISE EXCEPTION 'Failed items require one or two photo evidence files';
   END IF;
 
+  IF cardinality(NEW.evidence_paths) <> (
+    SELECT count(DISTINCT evidence_value) FROM unnest(NEW.evidence_paths) AS evidence_value
+  ) THEN
+    RAISE EXCEPTION 'Duplicate evidence files are not allowed';
+  END IF;
+
   FOREACH evidence_path IN ARRAY NEW.evidence_paths LOOP
     IF evidence_path !~ (
       '^' || NEW.inspection_id::text || '/' || NEW.template_item_id::text || '/[^/]+$'
@@ -403,7 +409,7 @@ BEGIN
     FROM storage.objects
     WHERE bucket_id = 'facility-inspection-evidence' AND name = evidence_path;
 
-    IF evidence_mime NOT IN ('image/jpeg', 'image/png', 'image/webp') THEN
+    IF evidence_mime IS NULL OR evidence_mime NOT IN ('image/jpeg', 'image/png', 'image/webp') THEN
       RAISE EXCEPTION 'Evidence file is missing or is not an allowed image type';
     END IF;
   END LOOP;
