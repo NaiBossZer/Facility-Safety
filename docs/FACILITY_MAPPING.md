@@ -56,7 +56,7 @@ Existing `assets` remain the asset master. `facility_asset_locations` links asse
 - Do not include **ไม่เกี่ยวข้อง (N/A)** or **ต้องปรับปรุง (Needs improvement)** as item result choices in this version.
 - Store the result for each checklist item against the inspection record and the checklist template version used, so historical results remain interpretable.
 - When an inspector selects **ไม่ผ่าน (Fail)**, require a non-empty problem description / remark for that checklist item before the inspection can be saved or submitted. A blank or whitespace-only remark is invalid; the validation must also be enforced by trusted server-side logic, not only the form UI.
-- When an inspector selects **ไม่ผ่าน (Fail)**, require at least one photo evidence attachment for that checklist item before the inspection can be saved or submitted. Validate that the uploaded file is an allowed image type and enforce the requirement through trusted server-side logic as well as the form UI.
+- When an inspector selects **ไม่ผ่าน (Fail)**, require at least one and allow up to **2 photo evidence attachments** for that checklist item before the inspection can be saved or submitted. Validate that each uploaded file is an allowed image type and enforce the minimum and maximum through trusted server-side logic as well as the form UI.
 - Store photo evidence as a reference associated with the specific inspection item and inspection record; retain access controls so only authorized inspection roles can view it. Do not expose public object URLs for restricted evidence.
 - For **ผ่าน (Pass)**, photo evidence is optional unless a separate checklist rule explicitly requires it.
 - For **ผ่าน (Pass)**, a remark is optional unless a separate checklist rule explicitly requires it.
