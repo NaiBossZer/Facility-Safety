@@ -24,6 +24,7 @@ import { FacilityMappingPage } from "./pages/FacilityMappingPage";
 import { FacilityInspectionPage } from "./pages/FacilityInspectionPage";
 import { FacilityChecklistTemplatesPage } from "./pages/FacilityChecklistTemplatesPage";
 import { FacilityAssignmentsPage } from "./pages/FacilityAssignmentsPage";
+import { FacilityInspectionReviewPage } from "./pages/FacilityInspectionReviewPage";
 
 export default function App() {
   const { page, setPage, migration } = useAppData();
@@ -92,6 +93,7 @@ export default function App() {
           {page === "facility-inspection" && <FacilityInspectionPage currentUser={currentUser} onBack={() => setPage("facility-mapping")} />}
           {page === "facility-templates" && <FacilityChecklistTemplatesPage currentUser={currentUser} onBack={() => setPage("facility-mapping")} />}
           {page === "facility-assignments" && <FacilityAssignmentsPage currentUser={currentUser} onBack={() => setPage("facility-mapping")} />}
+          {page === "facility-review" && <FacilityInspectionReviewPage currentUser={currentUser} onBack={() => setPage("facility-mapping")} />}
           {page === "workorder" && <WorkOrderPage />}
           {page === "fuel" && <FuelManagementPage />}
           {page === "procurement" && <ProcurementPage />}
