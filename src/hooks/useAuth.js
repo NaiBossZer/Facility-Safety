@@ -18,6 +18,7 @@ export function useAuth() {
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState(null);
+  const [ssoPending, setSsoPending] = useState(false);
 
   // false means the account is inactive or its profile could not be verified.
   // null means no profile row exists; central role claims can still authorize
@@ -86,7 +87,13 @@ export function useAuth() {
   // Supabase session through a strictly origin- and window-checked message.
   useEffect(() => {
     const parentOrigin = portalOrigin();
-    if (!parentOrigin || window.parent === window) return;
+    if (!parentOrigin || window.parent === window) {
+      setSsoPending(false);
+      return;
+    }
+
+    setSsoPending(true);
+    const timeout = window.setTimeout(() => setSsoPending(false), 8000);
 
     const onMessage = async (event) => {
       if (event.origin !== parentOrigin || event.source !== window.parent) return;
@@ -94,18 +101,28 @@ export function useAuth() {
 
       const accessToken = event.data?.access_token;
       const refreshToken = event.data?.refresh_token;
-      if (typeof accessToken !== "string" || typeof refreshToken !== "string") return;
+      if (typeof accessToken !== "string" || typeof refreshToken !== "string") {
+        setSsoPending(false);
+        return;
+      }
 
       const { data, error } = await supabase.auth.setSession({
         access_token: accessToken,
         refresh_token: refreshToken,
       });
-      if (error || !data.session?.user) return;
+      if (error || !data.session?.user) {
+        setSsoPending(false);
+        return;
+      }
 
       const profileResult = await loadProfile(data.session.user.id);
-      if (profileResult === false) return;
+      if (profileResult === false) {
+        setSsoPending(false);
+        return;
+      }
 
       setSession(data.session);
+      setSsoPending(false);
       window.parent.postMessage(
         { type: "FACILITY_SAFETY_SSO_COMPLETE" },
         parentOrigin,
@@ -114,7 +131,10 @@ export function useAuth() {
 
     window.addEventListener("message", onMessage);
     window.parent.postMessage({ type: PORTAL_SSO_MESSAGE }, parentOrigin);
-    return () => window.removeEventListener("message", onMessage);
+    return () => {
+      window.clearTimeout(timeout);
+      window.removeEventListener("message", onMessage);
+    };
   }, [loadProfile]);
 
   const login = useCallback(async (email, password) => {
@@ -162,7 +182,7 @@ export function useAuth() {
       }
     : null;
 
-  return { currentUser, login, logout, loading };
+  return { currentUser, login, logout, loading: loading || ssoPending };
 }
 
 export default useAuth;
