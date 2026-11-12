@@ -322,6 +322,82 @@ CREATE POLICY facility_evidence_delete ON storage.objects
     )
   );
 
+CREATE OR REPLACE FUNCTION public.validate_facility_inspection_item_result()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, storage
+AS $
+DECLARE
+  parent_inspection public.facility_inspection_records%ROWTYPE;
+  expected_template_id UUID;
+  evidence_path TEXT;
+  evidence_mime TEXT;
+BEGIN
+  SELECT * INTO parent_inspection
+  FROM public.facility_inspection_records
+  WHERE id = NEW.inspection_id;
+
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Inspection record not found';
+  END IF;
+
+  SELECT template_id INTO expected_template_id
+  FROM public.facility_checklist_template_items
+  WHERE id = NEW.template_item_id;
+
+  IF expected_template_id IS NULL OR expected_template_id <> parent_inspection.template_id THEN
+    RAISE EXCEPTION 'Checklist item does not belong to the inspection template';
+  END IF;
+
+  IF NEW.result = 'fail' AND length(btrim(coalesce(NEW.remark, ''))) = 0 THEN
+    RAISE EXCEPTION 'A problem description is required for failed items';
+  END IF;
+
+  IF cardinality(NEW.evidence_paths) > 2 OR
+     (NEW.result = 'fail' AND cardinality(NEW.evidence_paths) < 1) THEN
+    RAISE EXCEPTION 'Failed items require one or two photo evidence files';
+  END IF;
+
+  FOREACH evidence_path IN ARRAY NEW.evidence_paths LOOP
+    IF evidence_path !~ ('^' || NEW.inspection_id::text || '/' || NEW.template_item_id::text || '/[^/]+  public.facility_fiscal_year_plans,
+  public.facility_maintenance_groups,
+  public.facility_maintenance_tasks,
+  public.facility_maintenance_task_buildings,
+  public.facility_checklist_templates,
+  public.facility_checklist_template_items,
+  public.facility_building_inspector_assignments,
+  public.facility_inspection_records,
+  public.facility_inspection_item_results
+TO authenticated;
+
+COMMENT ON TABLE public.facility_maintenance_tasks IS
+  'Planning-only tasks imported from the FY2570 workbook. No automatic inspection or work-order creation.';
+COMMENT ON COLUMN public.facility_maintenance_tasks.planned_weeks IS
+  'Source orange-fill markers in M-W format, e.g. 10-W1. Frequency text is retained separately.';
+COMMENT ON TABLE public.facility_inspection_item_results IS
+  'Binary Pass/Fail results. Fail requires nonblank remark and 1-2 private image evidence paths.';
+) THEN
+      RAISE EXCEPTION 'Invalid evidence file path';
+    END IF;
+    SELECT metadata->>'mimetype' INTO evidence_mime
+    FROM storage.objects
+    WHERE bucket_id = 'facility-inspection-evidence' AND name = evidence_path;
+    IF evidence_mime NOT IN ('image/jpeg', 'image/png', 'image/webp') THEN
+      RAISE EXCEPTION 'Evidence file is missing or is not an allowed image type';
+    END IF;
+  END LOOP;
+
+  RETURN NEW;
+END;
+$;
+
+DROP TRIGGER IF EXISTS facility_inspection_item_result_validate
+  ON public.facility_inspection_item_results;
+CREATE TRIGGER facility_inspection_item_result_validate
+  BEFORE INSERT OR UPDATE ON public.facility_inspection_item_results
+  FOR EACH ROW EXECUTE FUNCTION public.validate_facility_inspection_item_result();
+
 GRANT SELECT, INSERT, UPDATE, DELETE ON
   public.facility_fiscal_year_plans,
   public.facility_maintenance_groups,
