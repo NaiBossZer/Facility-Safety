@@ -1,7 +1,7 @@
 // ============================================================
 // App.jsx — Modular Application Shell Root
 // ============================================================
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useAppData } from "./store/AppDataProviderSupabase";
 import { Sidebar } from "./components/layout/Sidebar";
 import { Header } from "./components/layout/Header";
@@ -29,6 +29,13 @@ import { FacilityInspectionReviewPage } from "./pages/FacilityInspectionReviewPa
 export default function App() {
   const { page, setPage, migration } = useAppData();
   const [menuOpen, setMenuOpen] = useState(false);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("building_id") && params.get("facility_page") === "inspection") {
+      setPage("facility-inspection");
+    }
+  }, [setPage]);
   const { currentUser, login, logout, loading } = useAuth();
 
   // ถ้ายังไม่ได้ login → แสดงหน้า Login
