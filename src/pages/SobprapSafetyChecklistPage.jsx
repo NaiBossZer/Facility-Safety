@@ -293,6 +293,5 @@ export function SobprapSafetyChecklistPage({ currentUser }) {
     </div>
   );
 }
-}
 
 export default SobprapSafetyChecklistPage;
