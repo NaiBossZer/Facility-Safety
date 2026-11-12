@@ -77,6 +77,66 @@ CREATE TABLE IF NOT EXISTS public.facility_checklist_template_items (
 CREATE INDEX IF NOT EXISTS facility_checklist_items_template_idx
   ON public.facility_checklist_template_items(template_id, sort_order);
 
+CREATE OR REPLACE FUNCTION public.guard_facility_checklist_template_item_changes()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $
+DECLARE
+  target_template_id UUID;
+  template_active BOOLEAN;
+  template_used BOOLEAN;
+BEGIN
+  target_template_id := CASE WHEN TG_OP = 'DELETE' THEN OLD.template_id ELSE NEW.template_id END;
+  SELECT t.is_active,
+         EXISTS (SELECT 1 FROM public.facility_inspection_records i WHERE i.template_id = t.id)
+    INTO template_active, template_used
+  FROM public.facility_checklist_templates t
+  WHERE t.id = target_template_id;
+
+  IF coalesce(template_active, false) OR coalesce(template_used, false) THEN
+    RAISE EXCEPTION 'Checklist versions are immutable once activated or used; create a new version instead';
+  END IF;
+
+  IF TG_OP = 'DELETE' THEN RETURN OLD; END IF;
+  RETURN NEW;
+END;
+$;
+
+DROP TRIGGER IF EXISTS facility_checklist_template_items_immutable
+  ON public.facility_checklist_template_items;
+CREATE TRIGGER facility_checklist_template_items_immutable
+  BEFORE INSERT OR UPDATE OR DELETE ON public.facility_checklist_template_items
+  FOR EACH ROW EXECUTE FUNCTION public.guard_facility_checklist_template_item_changes();
+
+CREATE OR REPLACE FUNCTION public.guard_facility_checklist_template_changes()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $
+BEGIN
+  IF TG_OP = 'UPDATE' AND (
+    EXISTS (SELECT 1 FROM public.facility_inspection_records i WHERE i.template_id = OLD.id)
+    OR OLD.is_active
+  ) AND (
+    NEW.building_type IS DISTINCT FROM OLD.building_type
+    OR NEW.name IS DISTINCT FROM OLD.name
+    OR NEW.version IS DISTINCT FROM OLD.version
+  ) THEN
+    RAISE EXCEPTION 'A checklist version cannot be renamed or changed after activation/use; create a new version';
+  END IF;
+  RETURN NEW;
+END;
+$;
+
+DROP TRIGGER IF EXISTS facility_checklist_templates_immutable
+  ON public.facility_checklist_templates;
+CREATE TRIGGER facility_checklist_templates_immutable
+  BEFORE UPDATE ON public.facility_checklist_templates
+  FOR EACH ROW EXECUTE FUNCTION public.guard_facility_checklist_template_changes();
+
 CREATE TABLE IF NOT EXISTS public.facility_building_inspector_assignments (
   building_id TEXT NOT NULL REFERENCES public.buildings(id) ON DELETE CASCADE,
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
