@@ -37,6 +37,45 @@ Campus GLB
 
 Existing `assets` remain the asset master. `facility_asset_locations` links assets to one or more mapped points. Existing work orders and inspections gain nullable area/point references; all old rows and workflows remain valid.
 
+## Confirmed product requirements
+
+### Building interaction
+
+- The existing GLB stays the primary model; automatic rotation remains disabled.
+- Selecting a building in the 3D model navigates to the Facility-Safety **full-page** building inspection view.
+- Navigation carries the selected `building_id`; never identify a building by its display label alone.
+- The inspection page shows the building context and the standard building inspection checklist.
+- The standard checklist is the initial workflow (not an ad-hoc-only inspection form).
+
+### Inspection roles
+
+- **Building Inspector:** may inspect only buildings assigned to them.
+- **Safety Officer:** may review inspection results, assess risk, and follow up corrective actions.
+- **Admin:** manages buildings, checklist templates, assignments, and access.
+- Enforce these rules in database policies / trusted server logic, not only by hiding UI controls.
+
+### Maintenance plan and calendar
+
+The uploaded workbook `ตารางปฏิทินงานประจำ(แยกตามระบบ).xlsx` is the source of truth for FY2570.
+
+- Import the workbook's 10 system groups, task descriptions, stated frequencies, and orange week markers without rewriting their meaning.
+- A blank frequency stays blank; do not infer a frequency from a neighbouring row.
+- The orange fill represents a planned week in the source calendar. Preserve that week-level schedule as well as the written frequency.
+- Show a **central campus plan** and allow filtering / viewing the same plan by building.
+- Support three scopes: campus-wide tasks, tasks linked to one building, and one task linked to multiple buildings.
+- The calendar is **read-only planning**: display scheduled tasks only. Do not auto-create inspections, assign work, or send notifications when a date arrives.
+- The default landing view is **Dashboard + monthly calendar**, with system, building, and date filters.
+- Selecting a calendar item opens its details first; the detail view then provides navigation to the related building / equipment inspection page.
+- Do not display operational progress statuses in this calendar. It is a plan view only.
+
+### Fiscal-year versioning
+
+- Support multiple fiscal-year plans, not only FY2570.
+- A new fiscal year may be created from a prior-year plan as a **copy/template**, then edited independently.
+- Copying a plan must create a new fiscal-year version; it must not mutate the source year.
+- Keep source workbook metadata and imported schedule data for traceability.
+- Use the Thai fiscal-year range (1 October to 30 September) and retain the original calendar-year month/week context.
+
 ## Mapping states
 
 - `unmapped`: no model position assigned
@@ -48,18 +87,20 @@ Existing `assets` remain the asset master. `facility_asset_locations` links asse
 
 - New tables enable RLS.
 - Read access requires an authenticated session.
-- Writes require `public.is_manager()`, which is narrowed by the current SSO work.
+- Writes require an authorized role; manager-only policies in the foundation are a temporary baseline and must be refined to support assigned inspectors and Safety Officers before enabling the inspection workflow.
 - Points marked `restricted` are hidden from non-managers.
 - No `anon` grants or public read policies are added.
 - Never expose the Supabase service-role key in the browser.
 
 ## Rollout
 
-1. Review and apply the migration in the shared Supabase project.
-2. Verify the new tables, RLS, grants, and unchanged legacy tables.
-3. Add a Facility Mapping admin view for registering buildings, areas, and point anchors.
-4. Capture the actual GLB node/anchor mapping using the model viewer.
-5. Add a read-only Safety overlay to the Portal's existing 3D model.
-6. Connect inspections, work orders, assets, and later Smart Farm telemetry.
+1. Review the additive migration and verify its assumptions against the live schema.
+2. Design and migrate fiscal-year plan, plan-task, and task-building link tables; keep imported FY2570 plan separate from inspection execution records.
+3. Import and validate the workbook's exact 10 groups, 39 task rows, orange week markers, and frequency text.
+4. Build the Dashboard + monthly calendar and filters; calendar selection opens details and then the related inspection page.
+5. Build the standard building checklist and role-aware assignment / inspection workflow.
+6. Register real buildings, areas, and point anchors only after the owner confirms their names and positions.
+7. Add a read-only Safety overlay to the Portal's existing 3D model and pass the selected `building_id` into Facility-Safety.
+8. Verify RLS, role boundaries, old workflows, and the imported plan before production rollout.
 
-The migration is intentionally additive and does not seed fabricated campus records.
+The migration is intentionally additive and does not seed fabricated campus records. The workbook import must preserve source values; no sample building names, model coordinates, or building-to-task relationships are fabricated.
