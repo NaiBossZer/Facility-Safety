@@ -45,7 +45,10 @@ Existing `assets` remain the asset master. `facility_asset_locations` links asse
 - Selecting a building in the 3D model navigates to the Facility-Safety **full-page** building inspection view.
 - Navigation carries the selected `building_id`; never identify a building by its display label alone.
 - The inspection page shows the building context and the standard building inspection checklist.
-- The standard checklist is the initial workflow (not an ad-hoc-only inspection form).
+- Use **separate standard checklist templates by building type** (for example: office, greenhouse, laboratory/operation building, warehouse, or other confirmed types).
+- When a building is registered, assign its building type and associate the matching standard checklist template; do not force one universal checklist onto every building.
+- Checklist templates are centrally administered and versioned so later revisions do not silently rewrite historical inspection records.
+- The initial checklist categories can be tailored to the building type while retaining relevant core safety topics (structure, electrical, fire protection, sanitation/water, ventilation, building-use safety, and surrounding environment).
 
 ### Inspection roles
 
