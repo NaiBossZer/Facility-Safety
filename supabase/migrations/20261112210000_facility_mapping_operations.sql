@@ -64,6 +64,9 @@ CREATE TABLE IF NOT EXISTS public.facility_checklist_templates (
   UNIQUE (building_type, version)
 );
 
+CREATE UNIQUE INDEX IF NOT EXISTS facility_checklist_templates_one_active_idx
+  ON public.facility_checklist_templates(building_type) WHERE is_active;
+
 CREATE TABLE IF NOT EXISTS public.facility_checklist_template_items (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   template_id UUID NOT NULL REFERENCES public.facility_checklist_templates(id) ON DELETE CASCADE,
@@ -278,16 +281,21 @@ DECLARE
   building_type_value TEXT;
   template_type_value TEXT;
   template_version_value INTEGER;
+  template_active_value BOOLEAN;
   expected_items INTEGER;
   saved_items INTEGER;
 BEGIN
   SELECT building_type INTO building_type_value
   FROM public.buildings WHERE id = NEW.building_id;
-  SELECT building_type, version INTO template_type_value, template_version_value
+  SELECT building_type, version, is_active
+    INTO template_type_value, template_version_value, template_active_value
   FROM public.facility_checklist_templates WHERE id = NEW.template_id;
 
   IF building_type_value IS NULL OR template_type_value IS DISTINCT FROM building_type_value THEN
     RAISE EXCEPTION 'The selected checklist template does not match the building type';
+  END IF;
+  IF TG_OP = 'INSERT' AND NOT coalesce(template_active_value, false) THEN
+    RAISE EXCEPTION 'Only an active checklist template can be used for a new inspection';
   END IF;
   IF template_version_value IS DISTINCT FROM NEW.template_version THEN
     RAISE EXCEPTION 'The inspection template version does not match the selected template';
