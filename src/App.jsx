@@ -67,8 +67,8 @@ export default function App() {
         }
       `}</style>
 
-      {/* Official Mahidol University Global Navigation Bar */}
-      <MahidolTopBar />
+      {/* Portal already provides its own navigation while this app is embedded. */}
+      {window.parent === window && <MahidolTopBar />}
 
       {/* Sidebar Navigation (Desktop & Mobile Drawer) */}
       <Sidebar menuOpen={menuOpen} setMenuOpen={setMenuOpen} currentUser={currentUser} onLogout={logout} />
