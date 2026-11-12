@@ -14,6 +14,9 @@ import {
   LogOut,
   User,
   Fuel,
+  MapPinned,
+  Users,
+  ShieldCheck,
 } from "lucide-react";
 import { useAppData } from "../../store/AppDataProvider";
 import { cx } from "../../lib/helpers";
@@ -22,6 +25,10 @@ export const NAV_ITEMS = [
   { id: "dashboard",   name: "Dashboard",            desc: "ภาพรวมระบบ",       icon: LayoutDashboard },
   { id: "inspection",  name: "Inspection Checklist", desc: "บันทึกแบบตรวจเช็ค (2 Tracks)", icon: ClipboardCheck },
   { id: "sobprap-safety", name: "Safety Checklist สบปราบ", desc: "แบบตรวจ FM_0000 – FM_6000", icon: ShieldAlert },
+  { id: "facility-mapping", name: "Facility Mapping", desc: "แผนบำรุงรักษาและตรวจอาคาร", icon: MapPinned },
+  { id: "facility-templates", name: "Checklist Templates", desc: "แม่แบบตรวจตามประเภทอาคาร", icon: ClipboardCheck },
+  { id: "facility-assignments", name: "Inspector Assignments", desc: "มอบหมายผู้ตรวจตามอาคาร", icon: Users },
+  { id: "facility-review", name: "Inspection Review", desc: "ทบทวนผลโดย Safety Officer", icon: ShieldCheck },
   { id: "workorder",   name: "Work Orders",          desc: "ติดตามใบแจ้งซ่อม",  icon: Wrench },
   { id: "fuel",        name: "Fuel & Fleet",         desc: "บริหารเชื้อเพลิง & วางแผน", icon: Fuel },
   { id: "procurement", name: "E-Procurement",        desc: "งพ.001 / งพ.003 (Word/PDF)", icon: FileText },

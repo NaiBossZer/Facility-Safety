@@ -12,7 +12,6 @@ import {
   Download,
   Upload,
   RefreshCw,
-  KeyRound,
   ShieldCheck,
   Save,
   CheckCircle2,
@@ -344,23 +343,10 @@ export function BudgetManager() {
   );
 }
 
-// 4. Settings Manager (PIN, Backup, Restore)
-export function SettingsManager({ auth }) {
+// 4. Settings Manager (Backup, Restore)
+export function SettingsManager() {
   const { wipeAll, toast } = useAppData();
-  const [oldPin, setOldPin] = useState("");
-  const [newPin, setNewPin] = useState("");
   const [exportingAudit, setExportingAudit] = useState(false);
-
-  const handleChangePin = async () => {
-    const res = await auth.changePin(oldPin, newPin);
-    if (res.ok) {
-      toast.success("เปลี่ยนรหัส PIN สำเร็จ");
-      setOldPin("");
-      setNewPin("");
-    } else {
-      toast.error(res.error);
-    }
-  };
 
   const handleImport = async (e) => {
     const file = e.target.files?.[0];
@@ -400,37 +386,6 @@ export function SettingsManager({ auth }) {
 
   return (
     <div className="space-y-6">
-      {/* Change PIN */}
-      <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm max-w-lg space-y-4">
-        <h3 className="font-extrabold text-slate-800 flex items-center gap-2">
-          <KeyRound className="h-4 w-4 text-indigo-600" /> เปลี่ยนรหัสผ่าน Admin PIN
-        </h3>
-        <div className="space-y-3 text-xs">
-          <input
-            type="password"
-            maxLength={6}
-            value={oldPin}
-            onChange={(e) => setOldPin(e.target.value)}
-            placeholder="PIN เดิม 6 หลัก"
-            className="w-full rounded-xl border border-slate-200 p-2.5 outline-none"
-          />
-          <input
-            type="password"
-            maxLength={6}
-            value={newPin}
-            onChange={(e) => setNewPin(e.target.value)}
-            placeholder="PIN ใหม่ 6 หลัก (ตัวเลขล้วน)"
-            className="w-full rounded-xl border border-slate-200 p-2.5 outline-none"
-          />
-          <button
-            onClick={handleChangePin}
-            className="rounded-xl bg-slate-800 px-4 py-2 text-xs font-bold text-white hover:bg-slate-900"
-          >
-            อัปเดตรหัส PIN
-          </button>
-        </div>
-      </div>
-
       <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm max-w-lg space-y-3">
         <h3 className="font-extrabold text-slate-800 flex items-center gap-2"><ShieldCheck className="h-4 w-4 text-indigo-600" /> Audit Trail สำหรับ Compliance</h3>
         <p className="text-xs text-slate-500">บันทึกว่าใครสร้าง แก้ไข หรือลบข้อมูลสำคัญ เมื่อใด โดยอ่านได้เฉพาะผู้มีสิทธิ์จัดการ</p>

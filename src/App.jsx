@@ -1,7 +1,7 @@
 // ============================================================
 // App.jsx — Modular Application Shell Root
 // ============================================================
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useAppData } from "./store/AppDataProviderSupabase";
 import { Sidebar } from "./components/layout/Sidebar";
 import { Header } from "./components/layout/Header";
@@ -20,10 +20,22 @@ import { ReportsPage } from "./pages/ReportsPage";
 import { AdminPage } from "./pages/admin/AdminPage";
 import { FuelManagementPage } from "./pages/FuelManagementPage";
 import { SobprapSafetyChecklistPage } from "./pages/SobprapSafetyChecklistPage";
+import { FacilityMappingPage } from "./pages/FacilityMappingPage";
+import { FacilityInspectionPage } from "./pages/FacilityInspectionPage";
+import { FacilityChecklistTemplatesPage } from "./pages/FacilityChecklistTemplatesPage";
+import { FacilityAssignmentsPage } from "./pages/FacilityAssignmentsPage";
+import { FacilityInspectionReviewPage } from "./pages/FacilityInspectionReviewPage";
 
 export default function App() {
   const { page, setPage, migration } = useAppData();
   const [menuOpen, setMenuOpen] = useState(false);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("building_id") && params.get("facility_page") === "inspection") {
+      setPage("facility-inspection");
+    }
+  }, [setPage]);
   const { currentUser, login, logout, loading } = useAuth();
 
   // ถ้ายังไม่ได้ login → แสดงหน้า Login
@@ -67,8 +79,8 @@ export default function App() {
         }
       `}</style>
 
-      {/* Official Mahidol University Global Navigation Bar */}
-      <MahidolTopBar />
+      {/* Portal already provides its own navigation while this app is embedded. */}
+      {window.parent === window && <MahidolTopBar />}
 
       {/* Sidebar Navigation (Desktop & Mobile Drawer) */}
       <Sidebar menuOpen={menuOpen} setMenuOpen={setMenuOpen} currentUser={currentUser} onLogout={logout} />
@@ -84,6 +96,11 @@ export default function App() {
           {page === "dashboard" && <DashboardPage />}
           {page === "inspection" && <InspectionPage currentUser={currentUser} />}
           {page === "sobprap-safety" && <SobprapSafetyChecklistPage currentUser={currentUser} />}
+          {page === "facility-mapping" && <FacilityMappingPage currentUser={currentUser} onNavigate={setPage} />}
+          {page === "facility-inspection" && <FacilityInspectionPage currentUser={currentUser} onBack={() => setPage("facility-mapping")} />}
+          {page === "facility-templates" && <FacilityChecklistTemplatesPage currentUser={currentUser} onBack={() => setPage("facility-mapping")} />}
+          {page === "facility-assignments" && <FacilityAssignmentsPage currentUser={currentUser} onBack={() => setPage("facility-mapping")} />}
+          {page === "facility-review" && <FacilityInspectionReviewPage currentUser={currentUser} onBack={() => setPage("facility-mapping")} />}
           {page === "workorder" && <WorkOrderPage />}
           {page === "fuel" && <FuelManagementPage />}
           {page === "procurement" && <ProcurementPage />}
