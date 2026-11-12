@@ -216,15 +216,34 @@ DECLARE
   template_active BOOLEAN;
   template_used BOOLEAN;
 BEGIN
-  target_template_id := CASE WHEN TG_OP = 'DELETE' THEN OLD.template_id ELSE NEW.template_id END;
-  SELECT t.is_active,
-         EXISTS (SELECT 1 FROM public.facility_inspection_records i WHERE i.template_id = t.id)
-    INTO template_active, template_used
-  FROM public.facility_checklist_templates t
-  WHERE t.id = target_template_id;
+  -- On UPDATE, protect both the old and new template. Otherwise an item
+  -- could be moved out of an active/used template and mutate its history.
+  IF TG_OP = 'UPDATE' THEN
+    FOR target_template_id IN
+      SELECT DISTINCT candidate.template_id
+      FROM unnest(ARRAY[OLD.template_id, NEW.template_id]) AS candidate(template_id)
+    LOOP
+      SELECT t.is_active,
+             EXISTS (SELECT 1 FROM public.facility_inspection_records i WHERE i.template_id = t.id)
+        INTO template_active, template_used
+      FROM public.facility_checklist_templates t
+      WHERE t.id = target_template_id;
 
-  IF coalesce(template_active, false) OR coalesce(template_used, false) THEN
-    RAISE EXCEPTION 'Checklist versions are immutable once activated or used; create a new version instead';
+      IF coalesce(template_active, false) OR coalesce(template_used, false) THEN
+        RAISE EXCEPTION 'Checklist versions are immutable once activated or used; create a new version instead';
+      END IF;
+    END LOOP;
+  ELSE
+    target_template_id := CASE WHEN TG_OP = 'DELETE' THEN OLD.template_id ELSE NEW.template_id END;
+    SELECT t.is_active,
+           EXISTS (SELECT 1 FROM public.facility_inspection_records i WHERE i.template_id = t.id)
+      INTO template_active, template_used
+    FROM public.facility_checklist_templates t
+    WHERE t.id = target_template_id;
+
+    IF coalesce(template_active, false) OR coalesce(template_used, false) THEN
+      RAISE EXCEPTION 'Checklist versions are immutable once activated or used; create a new version instead';
+    END IF;
   END IF;
 
   IF TG_OP = 'DELETE' THEN RETURN OLD; END IF;
@@ -598,3 +617,20 @@ COMMENT ON COLUMN public.facility_maintenance_tasks.planned_weeks IS
   'Source orange-fill markers in M-W format, e.g. 10-W1. Frequency text is retained separately.';
 COMMENT ON TABLE public.facility_inspection_item_results IS
   'Binary Pass/Fail results. Fail requires nonblank remark and 1-2 private image evidence paths.';
+
+-- Restrict SECURITY DEFINER helpers used by RLS to signed-in sessions.
+-- Trigger functions are invoked by their triggers, not exposed as RPC APIs.
+REVOKE EXECUTE ON FUNCTION public.facility_user_role() FROM PUBLIC, anon;
+REVOKE EXECUTE ON FUNCTION public.facility_is_admin() FROM PUBLIC, anon;
+REVOKE EXECUTE ON FUNCTION public.facility_is_safety_officer() FROM PUBLIC, anon;
+REVOKE EXECUTE ON FUNCTION public.facility_can_inspect_building(TEXT) FROM PUBLIC, anon;
+
+GRANT EXECUTE ON FUNCTION public.facility_user_role() TO authenticated;
+GRANT EXECUTE ON FUNCTION public.facility_is_admin() TO authenticated;
+GRANT EXECUTE ON FUNCTION public.facility_is_safety_officer() TO authenticated;
+GRANT EXECUTE ON FUNCTION public.facility_can_inspect_building(TEXT) TO authenticated;
+
+REVOKE EXECUTE ON FUNCTION public.guard_facility_checklist_template_item_changes() FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.guard_facility_checklist_template_changes() FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.validate_facility_inspection_record() FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.validate_facility_inspection_item_result() FROM PUBLIC, anon, authenticated;
