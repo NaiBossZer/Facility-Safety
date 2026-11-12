@@ -17,7 +17,7 @@ export function FacilityInspectionReviewPage({ currentUser, onBack }) {
     setLoading(true);setMessage("");
     const {data,error}=await supabase.from("facility_inspection_records")
       .select("id,building_id,inspector_id,inspection_date,status,template_version,review_notes,risk_assessment,created_at,buildings(name,code),facility_checklist_templates(name),facility_inspection_item_results(id,result,remark,evidence_paths,facility_checklist_template_items(category,title))")
-      .order("created_at",{ascending:false}).limit(100);
+      .in("status",["submitted","reviewed"]).order("created_at",{ascending:false}).limit(100);
     if(error)setMessage(error.message);else setRecords(data||[]);
     setLoading(false);
   },[]);
