@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { ArrowLeft, CopyPlus, Plus, RefreshCw, ShieldCheck } from "lucide-react";
+import { ArrowLeft, CopyPlus, Plus, RefreshCw } from "lucide-react";
 import { supabase } from "../lib/supabaseClient";
 
 export function FacilityChecklistTemplatesPage({ currentUser, onBack }) {
