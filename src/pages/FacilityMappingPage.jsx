@@ -45,7 +45,7 @@ export function FacilityMappingPage({ currentUser, onNavigate }) {
     setMessage("");
     const [planResult, buildingResult] = await Promise.all([
       supabase.from("facility_fiscal_year_plans")
-        .select("id,fiscal_year,title,starts_on,ends_on,facility_maintenance_groups(id,source_number,name,facility_maintenance_tasks(id,source_row,description,frequency_text,planned_weeks,source_note,facility_maintenance_task_buildings(building_id)))")
+        .select("id,fiscal_year,title,starts_on,ends_on,source_workbook,source_sheet,source_metadata,facility_maintenance_groups(id,source_number,name,facility_maintenance_tasks(id,source_row,description,frequency_text,planned_weeks,source_note,sort_order,facility_maintenance_task_buildings(building_id)))")
         .order("fiscal_year", { ascending: false }),
       supabase.from("buildings").select("id,name,code,building_type,active").order("order"),
     ]);
@@ -269,7 +269,7 @@ export function FacilityMappingPage({ currentUser, onNavigate }) {
 
           {tab === "calendar" && <div className="space-y-4">
             <div className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-4 md:flex-row md:items-center md:justify-between">
-              <div className="flex items-center gap-3"><button onClick={() => setMonthIndex((v) => (v + 11) % 12)} className="rounded-lg border p-2"><ChevronLeft size={18}/></button><div><h2 className="text-lg font-black text-[#123B63]">{MONTHS[monthIndex].name} {MONTHS[monthIndex].year + 543 - 543}</h2><p className="text-xs text-slate-500">ปีงบประมาณ 2570 · แสดงสัปดาห์ตามเครื่องหมายสีส้ม</p></div><button onClick={() => setMonthIndex((v) => (v + 1) % 12)} className="rounded-lg border p-2"><ChevronRight size={18}/></button></div>
+              <div className="flex items-center gap-3"><button onClick={() => setMonthIndex((v) => (v + 11) % 12)} className="rounded-lg border p-2"><ChevronLeft size={18}/></button><div><h2 className="text-lg font-black text-[#123B63]">{MONTHS[monthIndex].name} {MONTHS[monthIndex].year}</h2><p className="text-xs text-slate-500">ปีงบประมาณ 2570 · แสดงสัปดาห์ตามเครื่องหมายสีส้ม</p></div><button onClick={() => setMonthIndex((v) => (v + 1) % 12)} className="rounded-lg border p-2"><ChevronRight size={18}/></button></div>
               <div className="flex flex-wrap gap-2">
                 <select value={systemFilter} onChange={(e) => setSystemFilter(e.target.value)} className="rounded-lg border border-slate-200 px-3 py-2 text-sm"><option value="all">ทุกระบบงาน</option>{(activePlan?.facility_maintenance_groups || []).map((g) => <option key={g.id} value={String(g.source_number)}>{g.name}</option>)}</select>
                 <select value={buildingFilter} onChange={(e) => setBuildingFilter(e.target.value)} className="rounded-lg border border-slate-200 px-3 py-2 text-sm"><option value="all">ทุกขอบเขต</option><option value="campus">งานส่วนกลาง</option>{buildings.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}</select>
