@@ -117,6 +117,10 @@ SECURITY DEFINER
 SET search_path = public
 AS $
 BEGIN
+  IF TG_OP = 'UPDATE' AND NEW.is_active AND NOT OLD.is_active
+     AND NOT EXISTS (SELECT 1 FROM public.facility_checklist_template_items i WHERE i.template_id = NEW.id) THEN
+    RAISE EXCEPTION 'A checklist template must contain at least one item before activation';
+  END IF;
   IF TG_OP = 'UPDATE' AND (
     EXISTS (SELECT 1 FROM public.facility_inspection_records i WHERE i.template_id = OLD.id)
     OR OLD.is_active
@@ -233,10 +237,13 @@ SECURITY DEFINER
 SET search_path = public, auth
 AS $$
   SELECT public.facility_is_admin()
-    OR EXISTS (
-      SELECT 1
-      FROM public.facility_building_inspector_assignments a
-      WHERE a.building_id = target_building_id AND a.user_id = auth.uid()
+    OR (
+      public.facility_user_role() IN ('building_inspector', 'building inspector', 'inspector')
+      AND EXISTS (
+        SELECT 1
+        FROM public.facility_building_inspector_assignments a
+        WHERE a.building_id = target_building_id AND a.user_id = auth.uid()
+      )
     );
 $$;
 
@@ -387,6 +394,54 @@ CREATE POLICY facility_evidence_delete ON storage.objects
         AND public.facility_can_inspect_building(i.building_id)
     )
   );
+
+CREATE OR REPLACE FUNCTION public.validate_facility_inspection_record()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $
+DECLARE
+  building_type_value TEXT;
+  template_type_value TEXT;
+  template_version_value INTEGER;
+  expected_items INTEGER;
+  saved_items INTEGER;
+BEGIN
+  SELECT building_type INTO building_type_value
+  FROM public.buildings WHERE id = NEW.building_id;
+  SELECT building_type, version INTO template_type_value, template_version_value
+  FROM public.facility_checklist_templates WHERE id = NEW.template_id;
+
+  IF building_type_value IS NULL OR template_type_value IS DISTINCT FROM building_type_value THEN
+    RAISE EXCEPTION 'The selected checklist template does not match the building type';
+  END IF;
+  IF template_version_value IS DISTINCT FROM NEW.template_version THEN
+    RAISE EXCEPTION 'The inspection template version does not match the selected template';
+  END IF;
+
+  IF NEW.status = 'submitted' THEN
+    SELECT count(*) INTO expected_items
+    FROM public.facility_checklist_template_items WHERE template_id = NEW.template_id;
+    SELECT count(*) INTO saved_items
+    FROM public.facility_inspection_item_results WHERE inspection_id = NEW.id;
+    IF expected_items = 0 OR saved_items <> expected_items THEN
+      RAISE EXCEPTION 'Every checklist item must have a result before submission';
+    END IF;
+  END IF;
+
+  IF NEW.status = 'reviewed' AND NOT public.facility_is_safety_officer() THEN
+    RAISE EXCEPTION 'Only a Safety Officer may mark an inspection as reviewed';
+  END IF;
+  RETURN NEW;
+END;
+$;
+
+DROP TRIGGER IF EXISTS facility_inspection_record_validate
+  ON public.facility_inspection_records;
+CREATE TRIGGER facility_inspection_record_validate
+  BEFORE INSERT OR UPDATE ON public.facility_inspection_records
+  FOR EACH ROW EXECUTE FUNCTION public.validate_facility_inspection_record();
 
 CREATE OR REPLACE FUNCTION public.validate_facility_inspection_item_result()
 RETURNS TRIGGER
