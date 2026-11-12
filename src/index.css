@@ -184,3 +184,55 @@
 @media(max-width:1100px) { .fs-summary-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } .fs-building-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } .fs-hero-progress { width:145px; } }
 @media(max-width:800px) { .fs-page-title { align-items:flex-start; flex-direction:column; } .fs-page-actions { width:100%; } .fs-hero-strip { flex-wrap:wrap; gap:13px; } .fs-hero-divider { display:none; } .fs-hero-progress { width:100%; margin:4px 0 0; } .fs-check-layout { grid-template-columns:1fr; } .fs-category-panel { position:static; } .fs-category-panel { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:3px; } .fs-inspection-meta { grid-template-columns:1fr; } }
 @media(max-width:560px) { .fs-summary-grid { grid-template-columns:repeat(2,minmax(0,1fr)); padding:12px; gap:8px; } .fs-summary-card { min-height:88px; padding:11px; } .fs-summary-card strong { font-size:23px; } .fs-overview-foot { padding:0 13px 12px; } .fs-panel { padding:14px; } .fs-building-grid { grid-template-columns:1fr 1fr; } .fs-hero-strip { padding:16px; } .fs-hero-meta { min-width:calc(50% - 28px); } .fs-category-panel { grid-template-columns:1fr; } }
+
+
+/* Mahidol Lampang Portal brand palette — shared Facility & Safety theme */
+:root {
+  --mahidol-navy: #0c2340;
+  --mahidol-blue: #163a66;
+  --mahidol-terracotta: #c66b4f;
+  --mahidol-gold: #d6a84f;
+  --mahidol-leaf: #5f8d62;
+  --mahidol-surface: #f4f6fb;
+  --mahidol-ink: #1f2933;
+  --mahidol-muted: #667085;
+  --mahidol-border: #e2e8f0;
+}
+body { background: var(--mahidol-surface); color: var(--mahidol-ink); }
+.safety-workspace { color: var(--mahidol-ink); }
+.safety-workspace .space-y-6 > .relative.overflow-hidden.rounded-3xl {
+  background: linear-gradient(116deg, var(--mahidol-navy), var(--mahidol-blue)) !important;
+  border-color: var(--mahidol-border) !important;
+}
+.safety-workspace .rounded-2xl.border,
+.safety-workspace .rounded-xl.border,
+.safety-workspace .rounded-3xl.border { border-color: var(--mahidol-border); }
+.safety-workspace input:focus,
+.safety-workspace select:focus,
+.safety-workspace textarea:focus {
+  outline-color: color-mix(in srgb, var(--mahidol-blue) 18%, transparent);
+  border-color: var(--mahidol-blue);
+}
+.fs-safety-page { color:var(--mahidol-ink); }
+.fs-page-title h1, .fs-section-heading h2 { color:var(--mahidol-navy); }
+.fs-eyebrow { color:var(--mahidol-blue); }
+.fs-hero-strip { background:linear-gradient(116deg,var(--mahidol-navy),var(--mahidol-blue)); }
+.fs-hero-mark { color:#e8d2a3; }
+.fs-progress span { background:var(--mahidol-gold); }
+.fs-summary-card { border-color:var(--mahidol-border); }
+.fs-summary-card strong { color:var(--mahidol-navy); }
+.fs-summary-green strong { color:var(--mahidol-leaf); }
+.fs-summary-orange strong { color:var(--mahidol-terracotta); }
+.fs-section-count { background:#edf2f8; color:var(--mahidol-blue); }
+.fs-building-card.is-selected { border-color:var(--mahidol-blue); background:#edf2f8; box-shadow:inset 0 0 0 1px var(--mahidol-blue); }
+.fs-building-card:hover { border-color:#b8c7d8; background:#f8fafc; }
+.fs-category-panel .fs-category-link.fs-active { background:var(--mahidol-blue); color:#fff; }
+.fs-category-panel .fs-category-link:hover { background:#f4f6fb; }
+.fs-panel,.fs-overview-card { border-color:var(--mahidol-border); }
+.fs-safety-page input:focus,.fs-safety-page select:focus,.fs-safety-page textarea:focus {
+  outline:2px solid rgb(22 58 102 / 15%);
+  border-color:var(--mahidol-blue);
+}
+.fs-safety-page .text-\\[\\#145ea8\\] { color:var(--mahidol-blue); }
+.fs-safety-page .bg-\\[\\#145ea8\\] { background-color:var(--mahidol-blue); }
+.fs-safety-page .border-\\[\\#145ea8\\] { border-color:var(--mahidol-blue); }
