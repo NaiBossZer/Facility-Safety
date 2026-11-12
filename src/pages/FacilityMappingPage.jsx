@@ -33,6 +33,8 @@ export function FacilityMappingPage({ currentUser, onNavigate }) {
   const [systemFilter, setSystemFilter] = useState("all");
   const [selectedTask, setSelectedTask] = useState(null);
   const [selectedBuildings, setSelectedBuildings] = useState([]);
+  const [editingBuildingId, setEditingBuildingId] = useState("");
+  const [buildingTypeDraft, setBuildingTypeDraft] = useState("");
 
   const admin = isAdmin(currentUser);
   const load = useCallback(async () => {
@@ -222,7 +224,7 @@ export function FacilityMappingPage({ currentUser, onNavigate }) {
 
           {tab === "buildings" && <div className="rounded-2xl border border-slate-200 bg-white p-5">
             <div className="mb-4 flex items-center justify-between"><div><h2 className="font-extrabold text-[#123B63]">ทะเบียนอาคาร</h2><p className="text-sm text-slate-500">ข้อมูลจริงจาก public.buildings — ไม่สร้างชื่ออาคารหรือพิกัดสมมติ</p></div><Building2 className="text-slate-400"/></div>
-            {buildings.length ? <div className="grid gap-3 md:grid-cols-2">{buildings.map((b) => <div key={b.id} className="rounded-xl border p-4"><p className="font-bold text-slate-800">{b.name}</p><p className="mt-1 text-xs text-slate-500">{b.code || "ไม่มีรหัส"} · {b.building_type || "ยังไม่กำหนดประเภท"}</p><button onClick={() => startInspection(b.id)} className="mt-3 inline-flex items-center gap-2 rounded-lg bg-[#123B63] px-3 py-2 text-xs font-bold text-white"><ClipboardCheck size={14}/> เปิดหน้าตรวจอาคาร</button></div>)}</div> : <div className="rounded-xl bg-slate-50 p-8 text-center text-sm text-slate-500">ยังไม่มีข้อมูลอาคารในฐานข้อมูล กรุณาเพิ่มทะเบียนอาคารจริงก่อนเชื่อม GLB และเปิดการตรวจ</div>}
+            {buildings.length ? <div className="grid gap-3 md:grid-cols-2">{buildings.map((b) => <div key={b.id} className="rounded-xl border p-4"><p className="font-bold text-slate-800">{b.name}</p><p className="mt-1 text-xs text-slate-500">{b.code || "ไม่มีรหัส"} · {b.building_type || "ยังไม่กำหนดประเภท"}</p>{admin && <div className="mt-3 flex gap-2"><input value={editingBuildingId === b.id ? buildingTypeDraft : (b.building_type || "")} onFocus={() => { setEditingBuildingId(b.id); setBuildingTypeDraft(b.building_type || ""); }} onChange={(e) => setBuildingTypeDraft(e.target.value)} placeholder="building_type เช่น office" className="min-w-0 flex-1 rounded-lg border px-2 py-1.5 text-xs"/><button onClick={async () => { setBusy(true); const {error}=await supabase.from("buildings").update({building_type:buildingTypeDraft.trim() || null}).eq("id",b.id); setMessage(error ? error.message : "บันทึกประเภทอาคารแล้ว"); setEditingBuildingId(""); await load(); setBusy(false); }} disabled={busy || editingBuildingId !== b.id} className="rounded-lg border px-3 py-1.5 text-xs font-bold">บันทึกประเภท</button></div>}<button onClick={() => startInspection(b.id)} className="mt-3 inline-flex items-center gap-2 rounded-lg bg-[#123B63] px-3 py-2 text-xs font-bold text-white"><ClipboardCheck size={14}/> เปิดหน้าตรวจอาคาร</button></div>)}</div> : <div className="rounded-xl bg-slate-50 p-8 text-center text-sm text-slate-500">ยังไม่มีข้อมูลอาคารในฐานข้อมูล กรุณาเพิ่มทะเบียนอาคารจริงก่อนเชื่อม GLB และเปิดการตรวจ</div>}
           </div>}
         </>
       )}
