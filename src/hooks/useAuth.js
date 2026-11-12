@@ -71,8 +71,13 @@ export function useAuth() {
 
     void boot();
 
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+    const { data: listener } = supabase.auth.onAuthStateChange((event, nextSession) => {
       if (!mounted) return;
+
+      // SIGNED_IN is committed to React state only after the staff profile
+      // has been checked in login() or the Portal SSO handler.
+      if (event === "SIGNED_IN" || event === "INITIAL_SESSION") return;
+
       setSession(nextSession);
       if (!nextSession) setProfile(null);
     });
