@@ -9,3 +9,39 @@
   --color-surface-warm: #F8F6F0;
   --color-mahidol-dark: #0e2b42;
 }
+
+
+/* Figma Make visual system — applied to the live Supabase application */
+@layer base {
+  :root {
+    font-family: "Noto Sans Thai", "Inter", system-ui, sans-serif;
+    color: #162235;
+    background: #f3f6fa;
+    font-synthesis: none;
+    --safety-navy: #0c2747;
+    --safety-blue: #1d69b7;
+    --safety-sky: #78baf8;
+    --safety-border: #dce5ef;
+    --safety-muted: #64748b;
+    --safety-surface: #ffffff;
+  }
+  body { background: #f3f6fa; }
+}
+@layer components {
+  .safety-page-surface {
+    max-width: 1540px;
+    margin-inline: auto;
+  }
+  .safety-panel {
+    border: 1px solid var(--safety-border);
+    border-radius: 14px;
+    background: white;
+    box-shadow: 0 2px 8px rgb(15 39 71 / 4%);
+  }
+}
+@media (min-width: 1024px) {
+  .lg\\:pl-64 { padding-left: 260px; }
+}
+@media (max-width: 1023px) {
+  main { padding-bottom: 6.5rem; }
+}
