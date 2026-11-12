@@ -435,6 +435,11 @@ CREATE POLICY facility_checklist_items_manage ON public.facility_checklist_templ
   FOR ALL TO authenticated USING (public.facility_is_admin())
   WITH CHECK (public.facility_is_admin());
 
+-- Facility Admin needs a directory view to assign eligible inspectors. Ordinary
+-- users retain the existing own-profile-only visibility.
+CREATE POLICY facility_admin_read_staff_profiles ON public.staff_profiles
+  FOR SELECT TO authenticated USING (public.facility_is_admin());
+
 CREATE POLICY facility_assignments_read ON public.facility_building_inspector_assignments
   FOR SELECT TO authenticated USING (
     user_id = auth.uid() OR public.facility_is_admin() OR public.facility_is_safety_officer()
