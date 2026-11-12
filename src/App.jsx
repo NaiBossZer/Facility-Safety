@@ -79,7 +79,7 @@ export default function App() {
         <Header setMenuOpen={setMenuOpen} currentUser={currentUser} onLogout={logout} />
 
         {/* Page Views Router */}
-        <main className="px-4 pb-28 pt-5 sm:px-6 lg:pb-10">
+        <main className="safety-workspace px-4 pb-28 pt-5 sm:px-6 lg:pb-10">
           <MigrationBanner migration={migration} onMigrate={() => migration.runMigration()} />
           {page === "dashboard" && <DashboardPage />}
           {page === "inspection" && <InspectionPage currentUser={currentUser} />}
