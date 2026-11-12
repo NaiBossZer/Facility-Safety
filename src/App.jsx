@@ -19,6 +19,7 @@ import { ProcurementPage } from "./pages/ProcurementPage";
 import { ReportsPage } from "./pages/ReportsPage";
 import { AdminPage } from "./pages/admin/AdminPage";
 import { FuelManagementPage } from "./pages/FuelManagementPage";
+import { SobprapSafetyChecklistPage } from "./pages/SobprapSafetyChecklistPage";
 
 export default function App() {
   const { page, setPage, migration } = useAppData();
@@ -82,6 +83,7 @@ export default function App() {
           <MigrationBanner migration={migration} onMigrate={() => migration.runMigration()} />
           {page === "dashboard" && <DashboardPage />}
           {page === "inspection" && <InspectionPage currentUser={currentUser} />}
+          {page === "sobprap-safety" && <SobprapSafetyChecklistPage currentUser={currentUser} />}
           {page === "workorder" && <WorkOrderPage />}
           {page === "fuel" && <FuelManagementPage />}
           {page === "procurement" && <ProcurementPage />}
