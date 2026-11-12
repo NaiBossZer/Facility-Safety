@@ -91,6 +91,15 @@ The uploaded workbook `ตารางปฏิทินงานประจำ
 - Keep source workbook metadata and imported schedule data for traceability.
 - Use the Thai fiscal-year range (1 October to 30 September) and retain the original calendar-year month/week context.
 
+## Implementation status (branch preview)
+- Facility Mapping dashboard and monthly plan calendar are implemented in this branch.
+- FY2570 workbook is represented in `src/data/facilityMaintenanceFY2570.json`, preserving 10 groups, 39 task descriptions, frequency text (including nulls), and source orange week markers.
+- Admin UI supports FY2570 import, building/task scope links, independent fiscal-year copies, and editing copied task schedules.
+- Checklist template management, building inspector assignments, inspection submission, and Safety Officer review screens are implemented in this branch.
+- Fail results require a nonblank remark and 1–2 allowed private image evidence files; database constraints/triggers enforce this independently of the browser.
+- These changes are not production-active until the new migration is reviewed/applied and the PR is merged.
+- The Portal GLB still has no verified building-to-mesh anchors; click-to-inspect on the 3D model remains blocked until actual buildings and anchors are confirmed.
+
 ## Mapping states
 
 - `unmapped`: no model position assigned
@@ -102,20 +111,20 @@ The uploaded workbook `ตารางปฏิทินงานประจำ
 
 - New tables enable RLS.
 - Read access requires an authenticated session.
-- Writes require an authorized role; manager-only policies in the foundation are a temporary baseline and must be refined to support assigned inspectors and Safety Officers before enabling the inspection workflow.
+- Writes require the role-aware policies in the operational migration: Facility Admin manages plans/templates/assignments; Building Inspector can create and submit inspections only for assigned buildings; Safety Officer can review inspections and record risk assessment / follow-up notes. The UI is not the security boundary; RLS and database triggers enforce these rules.
 - Points marked `restricted` are hidden from non-managers.
 - No `anon` grants or public read policies are added.
 - Never expose the Supabase service-role key in the browser.
 
 ## Rollout
 
-1. Review the additive migration and verify its assumptions against the live schema.
-2. Design and migrate fiscal-year plan, plan-task, and task-building link tables; keep imported FY2570 plan separate from inspection execution records.
-3. Import and validate the workbook's exact 10 groups, 39 task rows, orange week markers, and frequency text.
-4. Build the Dashboard + monthly calendar and filters; calendar selection opens details and then the related inspection page.
-5. Build the standard building checklist and role-aware assignment / inspection workflow, using the binary Pass / Fail result choices above and requiring both a problem description and at least one photo evidence attachment whenever an item is marked Fail.
-6. Register real buildings, areas, and point anchors only after the owner confirms their names and positions.
-7. Add a read-only Safety overlay to the Portal's existing 3D model and pass the selected `building_id` into Facility-Safety.
-8. Verify RLS, role boundaries, old workflows, and the imported plan before production rollout.
+1. Review and validate the committed operational migration against the live schema before applying it.
+2. The branch now contains the FY2570 workbook import source (10 groups / 39 tasks), Dashboard + monthly calendar, building/system filters, task details, building-scope linking, and independent fiscal-year copy/edit UI.
+3. The branch now contains versioned checklist-template management by building type, Building Inspector assignment UI, binary Pass/Fail inspection UI, Safety Officer review UI, and private evidence uploads.
+4. The database migration enforces assigned-building inspection access, immutable checklist versions after activation/use, complete checklist submission, mandatory nonblank remarks on Fail, and 1–2 private image evidence files on Fail.
+5. Import the FY2570 plan only after the migration is approved and applied; import is idempotent and does not create inspections, work orders, assignments, or notifications.
+6. Register real buildings and set their building types only from confirmed facility records. Do not invent model nodes or coordinates.
+7. Integrate the read-only Safety overlay into the Portal GLB and pass the selected `building_id` only after node/anchor verification.
+8. Run production RLS, role-boundary, evidence-access, existing-workflow, and import checks before rollout.
 
 The migration is intentionally additive and does not seed fabricated campus records. The workbook import must preserve source values; no sample building names, model coordinates, or building-to-task relationships are fabricated.
