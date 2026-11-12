@@ -50,6 +50,13 @@ Existing `assets` remain the asset master. `facility_asset_locations` links asse
 - Checklist templates are centrally administered and versioned so later revisions do not silently rewrite historical inspection records.
 - The initial checklist categories can be tailored to the building type while retaining relevant core safety topics (structure, electrical, fire protection, sanitation/water, ventilation, building-use safety, and surrounding environment).
 
+### Inspection result choices
+
+- Each checklist item has exactly two result choices: **ผ่าน (Pass)** and **ไม่ผ่าน (Fail)**.
+- Do not include **ไม่เกี่ยวข้อง (N/A)** or **ต้องปรับปรุง (Needs improvement)** as item result choices in this version.
+- Store the result for each checklist item against the inspection record and the checklist template version used, so historical results remain interpretable.
+- Any remediation / corrective-action workflow is handled separately from the binary inspection result; selecting “ไม่ผ่าน” must not silently create or assign a work order unless a separately approved workflow defines that behavior.
+
 ### Inspection roles
 
 - **Building Inspector:** may inspect only buildings assigned to them.
@@ -101,7 +108,7 @@ The uploaded workbook `ตารางปฏิทินงานประจำ
 2. Design and migrate fiscal-year plan, plan-task, and task-building link tables; keep imported FY2570 plan separate from inspection execution records.
 3. Import and validate the workbook's exact 10 groups, 39 task rows, orange week markers, and frequency text.
 4. Build the Dashboard + monthly calendar and filters; calendar selection opens details and then the related inspection page.
-5. Build the standard building checklist and role-aware assignment / inspection workflow.
+5. Build the standard building checklist and role-aware assignment / inspection workflow, using the binary Pass / Fail result choices above.
 6. Register real buildings, areas, and point anchors only after the owner confirms their names and positions.
 7. Add a read-only Safety overlay to the Portal's existing 3D model and pass the selected `building_id` into Facility-Safety.
 8. Verify RLS, role boundaries, old workflows, and the imported plan before production rollout.
