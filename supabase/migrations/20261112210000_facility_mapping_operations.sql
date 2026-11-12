@@ -139,17 +139,25 @@ STABLE
 SECURITY DEFINER
 SET search_path = public, auth
 AS $$
-  SELECT lower(coalesce(
-    (
-      SELECT sp.central_role
-      FROM public.staff_profiles sp
-      WHERE sp.user_id = auth.uid()
-        AND sp.active IS DISTINCT FROM false
-        AND sp.central_role IN ('SUPER_ADMIN', 'CONTENT_ADMIN', 'OPERATIONS_ADMIN', 'FACILITY_ADMIN')
-      LIMIT 1
-    ),
-    public.app_role()
-  ));
+  SELECT lower(
+    CASE
+      WHEN EXISTS (
+        SELECT 1 FROM public.staff_profiles sp
+        WHERE sp.user_id = auth.uid() AND sp.active = false
+      ) THEN 'inactive'
+      ELSE coalesce(
+        (
+          SELECT sp.central_role
+          FROM public.staff_profiles sp
+          WHERE sp.user_id = auth.uid()
+            AND sp.active IS DISTINCT FROM false
+            AND sp.central_role IN ('SUPER_ADMIN', 'CONTENT_ADMIN', 'OPERATIONS_ADMIN', 'FACILITY_ADMIN')
+          LIMIT 1
+        ),
+        public.app_role()
+      )
+    END
+  );
 $$;
 
 CREATE OR REPLACE FUNCTION public.facility_is_admin()
