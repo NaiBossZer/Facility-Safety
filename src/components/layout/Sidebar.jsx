@@ -44,7 +44,7 @@ export function Sidebar({ menuOpen, setMenuOpen, currentUser, onLogout }) {
   return (
     <>
       {/* Desktop Sidebar */}
-      <aside className="no-print fixed top-[52px] bottom-0 left-0 z-40 hidden w-[260px] flex-col border-r border-white/10 bg-[#0c2747] text-white shadow-xl lg:flex">
+      <aside className="no-print fixed top-[52px] bottom-0 left-0 z-40 hidden w-[260px] flex-col border-r border-white/10 bg-[#0c2340] text-white shadow-xl lg:flex">
         {/* Brand Header */}
         <div className="flex items-center gap-3 border-b border-white/10 bg-white/5 px-5 py-5">
           <img
@@ -54,7 +54,7 @@ export function Sidebar({ menuOpen, setMenuOpen, currentUser, onLogout }) {
           />
           <div className="min-w-0">
             <p className="truncate text-xs font-black leading-tight text-white">Facility &amp; Safety Platform</p>
-            <p className="truncate text-[10px] font-semibold text-[#9db2c9]">งานพันธกิจเพื่อสังคม ลำปาง</p>
+            <p className="truncate text-[10px] font-semibold text-[#aab8ca]">งานพันธกิจเพื่อสังคม ลำปาง</p>
           </div>
         </div>
 
@@ -70,19 +70,19 @@ export function Sidebar({ menuOpen, setMenuOpen, currentUser, onLogout }) {
                 className={cx(
                   "group flex w-full items-center gap-3 rounded-xl border border-transparent px-3 py-3 text-left transition-all duration-200",
                   on
-                    ? "border-[#78baf8]/30 bg-[#1d69b7] text-white shadow-lg shadow-black/20"
+                    ? "border-[#d6a84f]/40 bg-[#163a66] text-white shadow-lg shadow-black/20"
                     : "text-[#bbcad9] hover:border-white/10 hover:bg-white/10 hover:text-white"
                 )}
               >
                 <Icon
                   className={cx(
                     "h-5 w-5 shrink-0 transition-transform group-hover:scale-110",
-                    on ? "text-white" : "text-[#829bb4] group-hover:text-[#9dccfa]"
+                    on ? "text-white" : "text-[#9aa8ba] group-hover:text-[#d6a84f]"
                   )}
                 />
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-bold">{n.name}</p>
-                  <p className={cx("truncate text-[11px]", on ? "text-blue-100" : "text-[#829bb4]")}>
+                  <p className={cx("truncate text-[11px]", on ? "text-blue-100" : "text-[#9aa8ba]")}>
                     {n.desc}
                   </p>
                 </div>
@@ -90,7 +90,7 @@ export function Sidebar({ menuOpen, setMenuOpen, currentUser, onLogout }) {
                   <span
                     className={cx(
                       "rounded-full px-2 py-0.5 text-[10px] font-black",
-                      on ? "bg-[#D6A84F] text-[#123B63]" : "bg-slate-200 text-slate-700"
+                      on ? "bg-[#D6A84F] text-[#0c2340]" : "bg-slate-200 text-slate-700"
                     )}
                   >
                     {openCount}
@@ -102,7 +102,7 @@ export function Sidebar({ menuOpen, setMenuOpen, currentUser, onLogout }) {
         </nav>
 
         {/* Urgent Alert Banner in Sidebar */}
-        <div className="m-3 rounded-2xl bg-gradient-to-br from-[#123B63] via-[#0e2b42] to-slate-900 p-4 text-white border border-white/10 shadow-sm">
+        <div className="m-3 rounded-2xl bg-gradient-to-br from-[#0c2340] via-[#163a66] to-[#0c2340] p-4 text-white border border-white/10 shadow-sm">
           <div className="flex items-center gap-2">
             <AlertTriangle className="h-4 w-4 text-[#D6A84F]" />
             <p className="text-xs font-bold text-white">แจ้งเตือนเร่งด่วน</p>
@@ -112,7 +112,7 @@ export function Sidebar({ menuOpen, setMenuOpen, currentUser, onLogout }) {
           </p>
           <button
             onClick={() => handleNav("workorder")}
-            className="mt-2.5 w-full rounded-lg bg-white/15 py-1.5 text-[11px] font-bold text-white backdrop-blur transition hover:bg-[#D6A84F] hover:text-[#123B63] active:scale-95"
+            className="mt-2.5 w-full rounded-lg bg-white/15 py-1.5 text-[11px] font-bold text-white backdrop-blur transition hover:bg-[#d6a84f] hover:text-[#0c2340] active:scale-95"
           >
             ตรวจสอบทันที
           </button>
@@ -126,7 +126,7 @@ export function Sidebar({ menuOpen, setMenuOpen, currentUser, onLogout }) {
             className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm animate-fade"
             onClick={() => setMenuOpen(false)}
           />
-          <div className="absolute inset-y-0 left-0 w-72 animate-fade bg-[#0c2747] p-4 text-white shadow-2xl flex flex-col">
+          <div className="absolute inset-y-0 left-0 w-72 animate-fade bg-[#0c2340] p-4 text-white shadow-2xl flex flex-col">
             <div className="mb-4 flex items-center justify-between border-b border-white/10 pb-3">
               <div className="flex items-center gap-2.5">
                 <img
@@ -136,7 +136,7 @@ export function Sidebar({ menuOpen, setMenuOpen, currentUser, onLogout }) {
                 />
                 <div>
                   <p className="text-xs font-black text-white">Facility &amp; Safety</p>
-                  <p className="text-[10px] text-[#9db2c9] font-semibold">งานพันธกิจเพื่อสังคม</p>
+                  <p className="text-[10px] text-[#aab8ca] font-semibold">งานพันธกิจเพื่อสังคม</p>
                 </div>
               </div>
               <button
@@ -156,13 +156,13 @@ export function Sidebar({ menuOpen, setMenuOpen, currentUser, onLogout }) {
                     onClick={() => handleNav(n.id)}
                     className={cx(
                       "flex w-full items-center gap-3 rounded-xl border border-transparent px-3 py-3 text-left transition",
-                      on ? "border-[#78baf8]/30 bg-[#1d69b7] text-white shadow-lg" : "text-[#bbcad9] hover:border-white/10 hover:bg-white/10 hover:text-white"
+                      on ? "border-[#d6a84f]/40 bg-[#163a66] text-white shadow-lg" : "text-[#bbcad9] hover:border-white/10 hover:bg-white/10 hover:text-white"
                     )}
                   >
-                    <Icon className={cx("h-5 w-5 shrink-0", on ? "text-white" : "text-[#829bb4]")} />
+                    <Icon className={cx("h-5 w-5 shrink-0", on ? "text-white" : "text-[#9aa8ba]")} />
                     <div>
                       <p className="text-sm font-bold">{n.name}</p>
-                      <p className={cx("text-[11px]", on ? "text-blue-100" : "text-[#829bb4]")}>
+                      <p className={cx("text-[11px]", on ? "text-blue-100" : "text-[#9aa8ba]")}>
                         {n.desc}
                       </p>
                     </div>
