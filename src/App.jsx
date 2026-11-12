@@ -20,6 +20,8 @@ import { ReportsPage } from "./pages/ReportsPage";
 import { AdminPage } from "./pages/admin/AdminPage";
 import { FuelManagementPage } from "./pages/FuelManagementPage";
 import { SobprapSafetyChecklistPage } from "./pages/SobprapSafetyChecklistPage";
+import { FacilityMappingPage } from "./pages/FacilityMappingPage";
+import { FacilityInspectionPage } from "./pages/FacilityInspectionPage";
 
 export default function App() {
   const { page, setPage, migration } = useAppData();
@@ -84,6 +86,8 @@ export default function App() {
           {page === "dashboard" && <DashboardPage />}
           {page === "inspection" && <InspectionPage currentUser={currentUser} />}
           {page === "sobprap-safety" && <SobprapSafetyChecklistPage currentUser={currentUser} />}
+          {page === "facility-mapping" && <FacilityMappingPage currentUser={currentUser} onNavigate={setPage} />}
+          {page === "facility-inspection" && <FacilityInspectionPage currentUser={currentUser} onBack={() => setPage("facility-mapping")} />}
           {page === "workorder" && <WorkOrderPage />}
           {page === "fuel" && <FuelManagementPage />}
           {page === "procurement" && <ProcurementPage />}
