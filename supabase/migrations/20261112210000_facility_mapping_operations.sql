@@ -489,7 +489,7 @@ CREATE POLICY facility_inspections_insert ON public.facility_inspection_records
 CREATE POLICY facility_inspections_update ON public.facility_inspection_records
   FOR UPDATE TO authenticated USING (
     (inspector_id = auth.uid() AND status = 'draft' AND public.facility_can_inspect_building(building_id))
-    OR public.facility_is_safety_officer()
+    OR (public.facility_is_safety_officer() AND status IN ('submitted', 'reviewed'))
   ) WITH CHECK (
     (inspector_id = auth.uid() AND public.facility_can_inspect_building(building_id))
     OR (public.facility_is_safety_officer() AND status IN ('submitted', 'reviewed'))
