@@ -311,9 +311,38 @@ BEGIN
     END IF;
   END IF;
 
-  IF NEW.status = 'reviewed' AND NOT public.facility_is_safety_officer() THEN
-    RAISE EXCEPTION 'Only a Safety Officer may mark an inspection as reviewed';
+  IF TG_OP = 'INSERT' AND (
+    NEW.status <> 'draft' OR NEW.reviewer_id IS NOT NULL OR NEW.reviewed_at IS NOT NULL
+  ) THEN
+    RAISE EXCEPTION 'A new inspection must start as a draft without reviewer fields';
   END IF;
+
+  IF TG_OP = 'UPDATE' AND OLD.status <> 'draft' THEN
+    IF NOT public.facility_is_safety_officer() THEN
+      RAISE EXCEPTION 'Submitted inspections can only be changed by a Safety Officer';
+    END IF;
+    IF NEW.building_id IS DISTINCT FROM OLD.building_id
+       OR NEW.template_id IS DISTINCT FROM OLD.template_id
+       OR NEW.template_version IS DISTINCT FROM OLD.template_version
+       OR NEW.inspector_id IS DISTINCT FROM OLD.inspector_id
+       OR NEW.inspection_date IS DISTINCT FROM OLD.inspection_date THEN
+      RAISE EXCEPTION 'Inspection identity and checklist fields are immutable after submission';
+    END IF;
+    IF OLD.status = 'reviewed' AND NEW.status <> 'reviewed' THEN
+      RAISE EXCEPTION 'A reviewed inspection cannot be reopened by editing its review';
+    END IF;
+  END IF;
+
+  IF NEW.status = 'reviewed' THEN
+    IF NOT public.facility_is_safety_officer()
+       OR NEW.reviewer_id IS DISTINCT FROM auth.uid()
+       OR NEW.reviewed_at IS NULL THEN
+      RAISE EXCEPTION 'Only the acting Safety Officer may complete an inspection review';
+    END IF;
+  ELSIF NEW.reviewer_id IS NOT NULL OR NEW.reviewed_at IS NOT NULL THEN
+    RAISE EXCEPTION 'Reviewer fields are only allowed after review';
+  END IF;
+
   RETURN NEW;
 END;
 $$;
@@ -463,7 +492,7 @@ CREATE POLICY facility_inspections_update ON public.facility_inspection_records
     OR public.facility_is_safety_officer()
   ) WITH CHECK (
     (inspector_id = auth.uid() AND public.facility_can_inspect_building(building_id))
-    OR public.facility_is_safety_officer()
+    OR (public.facility_is_safety_officer() AND status IN ('submitted', 'reviewed'))
   );
 
 CREATE POLICY facility_inspection_results_read ON public.facility_inspection_item_results
