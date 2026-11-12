@@ -1,17 +1,15 @@
 // ============================================================
-// App.jsx — Modular Application Shell Root
+// App.jsx — Mahidol Portal-style authenticated application shell
 // ============================================================
 import React, { useState } from "react";
 import { useAppData } from "./store/AppDataProviderSupabase";
 import { Sidebar } from "./components/layout/Sidebar";
 import { Header } from "./components/layout/Header";
-import { MahidolTopBar } from "./components/layout/MahidolTopBar";
 import { BottomNav } from "./components/layout/BottomNav";
 import { Toast } from "./components/ui/Toast";
 import { MigrationBanner } from "./components/MigrationBanner";
 import { useAuth } from "./hooks/useAuth";
 import { LoginPage } from "./pages/LoginPage";
-
 import { DashboardPage } from "./pages/DashboardPage";
 import { InspectionPage } from "./pages/InspectionPage";
 import { WorkOrderPage } from "./pages/WorkOrderPage";
@@ -26,60 +24,31 @@ export default function App() {
   const [menuOpen, setMenuOpen] = useState(false);
   const { currentUser, login, logout, loading } = useAuth();
 
-  // ถ้ายังไม่ได้ login → แสดงหน้า Login
   if (loading) {
-    return <div className="flex min-h-screen items-center justify-center bg-slate-50 text-sm text-slate-500">กำลังตรวจสอบสิทธิ์…</div>;
+    return <div className="flex min-h-screen items-center justify-center bg-[#f4f6fb] text-sm text-slate-500">กำลังตรวจสอบสิทธิ์…</div>;
   }
-  if (!currentUser) {
-    return <LoginPage onLogin={login} />;
-  }
+  if (!currentUser) return <LoginPage onLogin={login} />;
+
   const canManage = ["admin", "dean", "deputy_dean", "finance_head", "section_head"].includes(currentUser.role);
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans text-slate-800 antialiased">
-      {/* Global CSS for Print & Animation */}
+    <div className="facility-app-shell min-h-screen bg-[#f4f6fb] font-sans text-[#1f2933] antialiased">
       <style>{`
-        @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(10px); }
-          to { opacity: 1; transform: none; }
-        }
-        .animate-fade {
-          animation: fadeIn 0.35s cubic-bezier(0.2, 0.7, 0.3, 1) both;
-        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+        .animate-fade { animation: fadeIn .3s cubic-bezier(.2,.7,.3,1) both; }
         @media print {
-          body * {
-            visibility: hidden !important;
-          }
-          #print-area, #print-area * {
-            visibility: visible !important;
-          }
-          #print-area {
-            position: absolute;
-            inset: 0;
-            width: 100%;
-            border: none !important;
-            box-shadow: none !important;
-            padding: 0 !important;
-          }
-          .no-print {
-            display: none !important;
-          }
+          body * { visibility: hidden !important; }
+          #print-area, #print-area * { visibility: visible !important; }
+          #print-area { position: absolute; inset: 0; width: 100%; border: none !important; box-shadow: none !important; padding: 0 !important; }
+          .no-print { display: none !important; }
         }
       `}</style>
 
-      {/* Official Mahidol University Global Navigation Bar */}
-      <MahidolTopBar />
-
-      {/* Sidebar Navigation (Desktop & Mobile Drawer) */}
       <Sidebar menuOpen={menuOpen} setMenuOpen={setMenuOpen} currentUser={currentUser} onLogout={logout} />
 
-      {/* Main Content Area */}
-      <div className="lg:pl-64">
-        {/* Header Bar */}
+      <div className="facility-main-column min-h-screen lg:pl-[260px]">
         <Header setMenuOpen={setMenuOpen} currentUser={currentUser} onLogout={logout} />
-
-        {/* Page Views Router */}
-        <main className="safety-workspace px-4 pb-28 pt-5 sm:px-6 lg:pb-10">
+        <main className="safety-workspace">
           <MigrationBanner migration={migration} onMigrate={() => migration.runMigration()} />
           {page === "dashboard" && <DashboardPage />}
           {page === "inspection" && <InspectionPage currentUser={currentUser} />}
@@ -93,10 +62,7 @@ export default function App() {
         </main>
       </div>
 
-      {/* Mobile Bottom Navigation */}
       <BottomNav />
-
-      {/* Toast Notification Container */}
       <Toast />
     </div>
   );
