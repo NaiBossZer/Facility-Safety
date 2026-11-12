@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { ArrowLeft, ClipboardCheck, Eye, RefreshCw, ShieldCheck } from "lucide-react";
+import { ArrowLeft, Eye, RefreshCw, ShieldCheck } from "lucide-react";
 import { supabase } from "../lib/supabaseClient";
 
 export function FacilityInspectionReviewPage({ currentUser, onBack }) {
