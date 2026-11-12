@@ -141,18 +141,11 @@ SET search_path = public, auth
 AS $$
   SELECT lower(coalesce(
     (
-      SELECT CASE
-        WHEN sp.central_role IN ('SUPER_ADMIN', 'FACILITY_ADMIN', 'CONTENT_ADMIN', 'OPERATIONS_ADMIN') THEN sp.central_role
-        ELSE sp.role
-      END
-      FROM public.staff_profiles sp
-      WHERE sp.user_id = auth.uid() AND sp.active IS DISTINCT FROM false
-      LIMIT 1
-    ),
-    (
       SELECT sp.central_role
       FROM public.staff_profiles sp
-      WHERE sp.user_id = auth.uid() AND sp.active IS DISTINCT FROM false
+      WHERE sp.user_id = auth.uid()
+        AND sp.active IS DISTINCT FROM false
+        AND sp.central_role IN ('SUPER_ADMIN', 'CONTENT_ADMIN', 'OPERATIONS_ADMIN', 'FACILITY_ADMIN')
       LIMIT 1
     ),
     public.app_role()
