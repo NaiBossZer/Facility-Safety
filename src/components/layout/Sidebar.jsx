@@ -126,22 +126,22 @@ export function Sidebar({ menuOpen, setMenuOpen, currentUser, onLogout }) {
             className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm animate-fade"
             onClick={() => setMenuOpen(false)}
           />
-          <div className="absolute inset-y-0 left-0 w-72 animate-fade bg-white p-4 shadow-2xl flex flex-col">
-            <div className="mb-4 flex items-center justify-between border-b border-slate-100 pb-3">
+          <div className="absolute inset-y-0 left-0 w-72 animate-fade bg-[#0c2747] p-4 text-white shadow-2xl flex flex-col">
+            <div className="mb-4 flex items-center justify-between border-b border-white/10 pb-3">
               <div className="flex items-center gap-2.5">
                 <img
                   src="/mahidol-logo.png"
                   alt="Mahidol University"
-                  className="h-8 w-auto rounded-md bg-white p-0.5 shadow-xs ring-1 ring-slate-200"
+                  className="h-8 w-auto rounded-lg bg-white p-1 shadow ring-1 ring-white/20"
                 />
                 <div>
-                  <p className="text-xs font-black text-[#123B63]">Facility &amp; Safety</p>
-                  <p className="text-[10px] text-[#D6A84F] font-semibold">งานพันธกิจเพื่อสังคม</p>
+                  <p className="text-xs font-black text-white">Facility &amp; Safety</p>
+                  <p className="text-[10px] text-[#9db2c9] font-semibold">งานพันธกิจเพื่อสังคม</p>
                 </div>
               </div>
               <button
                 onClick={() => setMenuOpen(false)}
-                className="rounded-lg p-2 text-slate-400 hover:bg-slate-100"
+                className="rounded-lg p-2 text-slate-300 hover:bg-white/10"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -155,14 +155,14 @@ export function Sidebar({ menuOpen, setMenuOpen, currentUser, onLogout }) {
                     key={n.id}
                     onClick={() => handleNav(n.id)}
                     className={cx(
-                      "flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition",
-                      on ? "bg-[#123B63] text-white border-l-4 border-[#D6A84F]" : "text-slate-600 hover:bg-slate-100 hover:text-[#123B63]"
+                      "flex w-full items-center gap-3 rounded-xl border border-transparent px-3 py-3 text-left transition",
+                      on ? "border-[#78baf8]/30 bg-[#1d69b7] text-white shadow-lg" : "text-[#bbcad9] hover:border-white/10 hover:bg-white/10 hover:text-white"
                     )}
                   >
-                    <Icon className={cx("h-5 w-5 shrink-0", on ? "text-[#D6A84F]" : "text-slate-400")} />
+                    <Icon className={cx("h-5 w-5 shrink-0", on ? "text-white" : "text-[#829bb4]")} />
                     <div>
                       <p className="text-sm font-bold">{n.name}</p>
-                      <p className={cx("text-[11px]", on ? "text-blue-100" : "text-slate-400")}>
+                      <p className={cx("text-[11px]", on ? "text-blue-100" : "text-[#829bb4]")}>
                         {n.desc}
                       </p>
                     </div>
