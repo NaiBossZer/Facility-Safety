@@ -236,3 +236,44 @@ body { background: var(--mahidol-surface); color: var(--mahidol-ink); }
 .fs-safety-page .text-\\[\\#145ea8\\] { color:var(--mahidol-blue); }
 .fs-safety-page .bg-\\[\\#145ea8\\] { background-color:var(--mahidol-blue); }
 .fs-safety-page .border-\\[\\#145ea8\\] { border-color:var(--mahidol-blue); }
+
+
+/* Mahidol Lampang Portal application shell structure */
+.facility-app-shell { min-height: 100vh; }
+.facility-sidebar { border-right: 1px solid rgb(255 255 255 / 8%); }
+.facility-sidebar-brand { background: linear-gradient(135deg, rgb(255 255 255 / 5%), transparent); }
+.facility-sidebar-nav { scrollbar-width: thin; scrollbar-color: rgb(255 255 255 / 18%) transparent; }
+.facility-sidebar-nav::-webkit-scrollbar { width: 5px; }
+.facility-sidebar-nav::-webkit-scrollbar-thumb { border-radius: 8px; background: rgb(255 255 255 / 18%); }
+.facility-nav-item[aria-current="page"] { position: relative; }
+.facility-nav-item[aria-current="page"]::before {
+  content: "";
+  position: absolute;
+  left: -1px;
+  top: 9px;
+  bottom: 9px;
+  width: 3px;
+  border-radius: 0 4px 4px 0;
+  background: var(--mahidol-gold);
+}
+.facility-top-header { box-shadow: 0 2px 10px rgb(12 35 64 / 4%); }
+.facility-main-column { min-width: 0; }
+.facility-main-column .safety-workspace {
+  width: 100%;
+  max-width: 1680px;
+  margin-inline: auto;
+  padding: 28px clamp(16px, 2.6vw, 38px) 56px !important;
+}
+.facility-bottom-nav { padding-bottom: env(safe-area-inset-bottom); }
+@media (min-width: 1024px) {
+  .facility-sidebar { width: 260px; }
+  .facility-main-column { padding-left: 260px; }
+}
+@media (max-width: 1023px) {
+  .facility-main-column { padding-left: 0; }
+  .facility-main-column .safety-workspace { padding: 20px 16px 100px !important; }
+}
+@media (max-width: 560px) {
+  .facility-top-header > div { min-height: 60px; padding-inline: 12px; }
+  .facility-main-column .safety-workspace { padding: 16px 12px 96px !important; }
+}
