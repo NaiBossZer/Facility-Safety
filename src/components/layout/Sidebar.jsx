@@ -44,22 +44,22 @@ export function Sidebar({ menuOpen, setMenuOpen, currentUser, onLogout }) {
   return (
     <>
       {/* Desktop Sidebar */}
-      <aside className="no-print fixed top-[52px] bottom-0 left-0 z-40 hidden w-64 flex-col border-r border-slate-200 bg-white lg:flex">
+      <aside className="no-print fixed top-[52px] bottom-0 left-0 z-40 hidden w-[260px] flex-col border-r border-white/10 bg-[#0c2747] text-white shadow-xl lg:flex">
         {/* Brand Header */}
-        <div className="flex items-center gap-3 border-b border-slate-100 px-5 py-4 bg-slate-50/60">
+        <div className="flex items-center gap-3 border-b border-white/10 bg-white/5 px-5 py-5">
           <img
             src="/mahidol-logo.png"
             alt="Mahidol University"
-            className="h-8 w-auto rounded-md bg-white p-0.5 shadow-xs ring-1 ring-slate-200"
+            className="h-9 w-auto rounded-xl bg-white p-1 shadow ring-1 ring-white/20"
           />
           <div className="min-w-0">
-            <p className="text-xs font-black leading-tight text-[#123B63] truncate">Facility &amp; Safety Platform</p>
-            <p className="text-[10px] font-semibold text-[#D6A84F] truncate">งานพันธกิจเพื่อสังคม ลำปาง</p>
+            <p className="truncate text-xs font-black leading-tight text-white">Facility &amp; Safety Platform</p>
+            <p className="truncate text-[10px] font-semibold text-[#9db2c9]">งานพันธกิจเพื่อสังคม ลำปาง</p>
           </div>
         </div>
 
         {/* Navigation Links */}
-        <nav className="flex-1 space-y-1.5 p-3 overflow-y-auto">
+        <nav className="flex-1 space-y-1.5 overflow-y-auto px-3 py-6">
           {NAV_ITEMS.filter((n) => n.id !== "admin" || ["admin", "dean", "deputy_dean", "finance_head", "section_head"].includes(currentUser?.role)).map((n) => {
             const Icon = n.icon;
             const on = page === n.id;
@@ -68,21 +68,21 @@ export function Sidebar({ menuOpen, setMenuOpen, currentUser, onLogout }) {
                 key={n.id}
                 onClick={() => handleNav(n.id)}
                 className={cx(
-                  "group flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition-all duration-200",
+                  "group flex w-full items-center gap-3 rounded-xl border border-transparent px-3 py-3 text-left transition-all duration-200",
                   on
-                    ? "bg-[#123B63] text-white shadow-md shadow-[#123B63]/25 border-l-4 border-[#D6A84F]"
-                    : "text-slate-600 hover:bg-slate-100 hover:text-[#123B63]"
+                    ? "border-[#78baf8]/30 bg-[#1d69b7] text-white shadow-lg shadow-black/20"
+                    : "text-[#bbcad9] hover:border-white/10 hover:bg-white/10 hover:text-white"
                 )}
               >
                 <Icon
                   className={cx(
                     "h-5 w-5 shrink-0 transition-transform group-hover:scale-110",
-                    on ? "text-[#D6A84F]" : "text-slate-400 group-hover:text-[#123B63]"
+                    on ? "text-white" : "text-[#829bb4] group-hover:text-[#9dccfa]"
                   )}
                 />
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-bold">{n.name}</p>
-                  <p className={cx("truncate text-[11px]", on ? "text-blue-100" : "text-slate-400")}>
+                  <p className={cx("truncate text-[11px]", on ? "text-blue-100" : "text-[#829bb4]")}>
                     {n.desc}
                   </p>
                 </div>
