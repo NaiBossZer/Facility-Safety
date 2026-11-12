@@ -1,11 +1,10 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  AlertTriangle, Building2, Camera, CheckCircle2, ClipboardCheck, Clock3,
-  FileText, ImagePlus, Loader2, RefreshCw, ShieldCheck, X, XCircle,
+  AlertTriangle, Camera, CheckCircle2, ClipboardCheck, Clock3,
+  ImagePlus, Loader2, RefreshCw, ShieldCheck, X, XCircle,
 } from "lucide-react";
 import { supabase } from "../lib/supabaseClient";
 import { Badge } from "../components/ui/Badge";
-import { SectionTitle } from "../components/ui/SectionTitle";
 import { cx } from "../lib/helpers";
 import { SOBPRAP_SCOPES, SOBPRAP_CHECKLISTS, SOBPRAP_REFERENCE_ISSUES } from "../data/sobprapSafetyChecklist";
 
