@@ -83,6 +83,7 @@ export function FacilityMappingPage({ currentUser, onNavigate }) {
   const importPlan = async () => {
     if (!admin) return;
     setBusy(true); setMessage("");
+    let createdPlanId = null;
     try {
       const { data: existing, error: findError } = await supabase.from("facility_fiscal_year_plans")
         .select("id").eq("fiscal_year", 2570).maybeSingle();
@@ -100,6 +101,7 @@ export function FacilityMappingPage({ currentUser, onNavigate }) {
         created_by: currentUser.id,
       }).select("id").single();
       if (planError) throw planError;
+      createdPlanId = plan.id;
       for (const group of fy2570Source.groups) {
         const { data: savedGroup, error: groupError } = await supabase.from("facility_maintenance_groups")
           .insert({ plan_id: plan.id, source_number: group.number, name: group.name, sort_order: group.number })
@@ -116,6 +118,7 @@ export function FacilityMappingPage({ currentUser, onNavigate }) {
       setMessage("นำเข้าแผน FY2570 สำเร็จ: 10 ระบบ 39 รายการ โดยไม่สร้างงานตรวจหรือใบงานอัตโนมัติ");
       await load();
     } catch (error) {
+      if (createdPlanId) await supabase.from("facility_fiscal_year_plans").delete().eq("id", createdPlanId);
       setMessage(`นำเข้าไม่สำเร็จ: ${error.message}`);
     } finally { setBusy(false); }
   };
@@ -123,6 +126,9 @@ export function FacilityMappingPage({ currentUser, onNavigate }) {
   const openTask = (task) => {
     setSelectedTask(task);
     setSelectedBuildings(task.buildingIds || []);
+    setEditDescription(task.description || "");
+    setEditFrequency(task.frequency_text || "");
+    setEditWeeks((task.planned_weeks || []).join(", "));
   };
 
   const saveTaskBuildings = async () => {
@@ -147,7 +153,7 @@ export function FacilityMappingPage({ currentUser, onNavigate }) {
   const saveTaskDetails = async () => {
     if (!admin || !selectedTask) return;
     const weeks = editWeeks.split(",").map((value) => value.trim()).filter(Boolean);
-    if (weeks.some((value) => !/^\\d{2}-W[1-5]$/.test(value))) {
+    if (weeks.some((value) => !/^\d{2}-W[1-5]$/.test(value))) {
       setMessage("รูปแบบสัปดาห์ไม่ถูกต้อง ใช้รูปแบบ 10-W1, 11-W4 เป็นต้น");
       return;
     }
@@ -234,7 +240,8 @@ export function FacilityMappingPage({ currentUser, onNavigate }) {
           <select value={planId} onChange={(e) => setPlanId(e.target.value)} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold">
             {plans.length ? plans.map((plan) => <option key={plan.id} value={plan.id}>ปีงบประมาณ {plan.fiscal_year}</option>) : <option value="">ยังไม่มีแผน</option>}
           </select>
-          <button onClick={() => void load()} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700"><RefreshCw size={16}/> รีเฟรช</button>\n          {admin && activePlan && <button disabled={busy} onClick={() => void copyFiscalYearPlan()} className="rounded-xl border border-[#123B63] px-3 py-2 text-sm font-bold text-[#123B63] disabled:opacity-50">คัดลอกเป็นปีใหม่</button>}
+          <button onClick={() => void load()} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700"><RefreshCw size={16}/> รีเฟรช</button>
+          {admin && activePlan && <button disabled={busy} onClick={() => void copyFiscalYearPlan()} className="rounded-xl border border-[#123B63] px-3 py-2 text-sm font-bold text-[#123B63] disabled:opacity-50">คัดลอกเป็นปีใหม่</button>}
           {admin && !plans.some((p) => p.fiscal_year === 2570) && (
             <button disabled={busy} onClick={() => void importPlan()} className="inline-flex items-center gap-2 rounded-xl bg-[#123B63] px-4 py-2 text-sm font-bold text-white disabled:opacity-50"><Upload size={16}/> นำเข้าแผน FY2570</button>
           )}
