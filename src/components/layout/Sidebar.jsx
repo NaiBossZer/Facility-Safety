@@ -15,6 +15,7 @@ import {
   Users,
   ShieldCheck,
   ChevronDown,
+  ExternalLink,
 } from "lucide-react";
 import { useAppData } from "../../store/AppDataProvider";
 import { cx } from "../../lib/helpers";
@@ -31,7 +32,7 @@ export const NAV_ITEMS = [
   { id: "fuel", name: "เชื้อเพลิงและยานพาหนะ", desc: "บริหารการใช้เชื้อเพลิงและรถ", icon: Fuel },
   { id: "procurement", name: "จัดซื้อจัดจ้าง", desc: "เอกสาร งพ.001 / งพ.003", icon: FileText },
   { id: "reports", name: "รายงาน", desc: "รายงานผลและเอกสารสรุป", icon: FileCheck2 },
-  { id: "admin", name: "ตั้งค่าระบบ", desc: "บุคลากร ข้อมูลกลาง และสิทธิ์", icon: ShieldAlert },
+  { id: "admin", name: "ทะเบียนและตั้งค่า Facility-Safety", desc: "บุคลากร ทะเบียน และการตั้งค่าเฉพาะระบบ", icon: ShieldAlert },
 ];
 
 const NAV_GROUPS = [
@@ -40,16 +41,28 @@ const NAV_GROUPS = [
   { id: "facility", label: "อาคารและแผนบำรุงรักษา", items: ["facility-mapping", "facility-templates", "facility-assignments", "facility-review"] },
   { id: "operations", label: "งานซ่อมและทรัพยากร", items: ["workorder", "fuel"] },
   { id: "finance", label: "จัดซื้อและรายงาน", items: ["procurement", "reports"] },
-  { id: "system", label: "ข้อมูลกลางและผู้ดูแล", items: ["admin"] },
+  { id: "system", label: "ทะเบียนระบบ Facility-Safety", items: ["admin"] },
 ];
 
 const getGroupForPage = (page) => NAV_GROUPS.find((group) => group.items.includes(page))?.id || "overview";
+
+function getPortalAdminUrl() {
+  let baseUrl = import.meta.env.VITE_PORTAL_URL || "https://mahidol-lampang-portal.pages.dev";
+  try {
+    if (document.referrer) baseUrl = new URL(document.referrer).origin;
+  } catch {
+    // Use the configured Portal URL when the app is opened outside the Portal.
+  }
+  return new URL("/admin/governance?tab=users", baseUrl).toString();
+}
 
 export function Sidebar({ menuOpen, setMenuOpen, currentUser }) {
   const { page, setPage, workOrders, stats } = useAppData();
   const [expandedGroup, setExpandedGroup] = useState(() => getGroupForPage(page));
   const openCount = stats?.open ?? workOrders.filter((w) => w.status < 6).length;
   const canManage = ["admin", "dean", "deputy_dean", "finance_head", "section_head"].includes(currentUser?.role);
+  const canManageCentralUsers = currentUser?.centralRole === "SUPER_ADMIN";
+  const portalAdminUrl = getPortalAdminUrl();
 
   useEffect(() => {
     setExpandedGroup(getGroupForPage(page));
@@ -127,7 +140,19 @@ export function Sidebar({ menuOpen, setMenuOpen, currentUser }) {
             <p className="truncate text-[10px] font-semibold text-[#D6A84F]">งานพันธกิจเพื่อสังคม ลำปาง</p>
           </div>
         </div>
-        <nav className="flex-1 space-y-2 overflow-y-auto p-3">{renderGroups()}</nav>
+        <nav className="flex-1 space-y-2 overflow-y-auto p-3">
+          {renderGroups()}
+          {canManageCentralUsers && (
+            <a href={portalAdminUrl} target="_top" rel="noopener noreferrer" className="mt-2 flex items-center gap-3 rounded-xl border border-[#D6A84F]/40 bg-amber-50 px-3 py-2.5 text-left text-[#123B63] transition hover:bg-amber-100">
+              <Users className="h-4 w-4 shrink-0 text-[#B7791F]" />
+              <span className="min-w-0 flex-1">
+                <span className="block text-[13px] font-bold">ผู้ใช้งานและสิทธิ์ส่วนกลาง</span>
+                <span className="block text-[10px] text-slate-500">จัดการผ่าน Mahidol Lampang Portal</span>
+              </span>
+              <ExternalLink className="h-3.5 w-3.5 shrink-0" />
+            </a>
+          )}
+        </nav>
       </aside>
 
       {menuOpen && (
