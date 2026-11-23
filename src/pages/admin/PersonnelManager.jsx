@@ -1,5 +1,5 @@
 // ============================================================
-// PersonnelManager.jsx — จัดการข้อมูลคนในองค์กร & ผู้มีหน้าที่รับผิดชอบ
+// PersonnelManager.jsx — ทะเบียนบุคลากร ผู้ตรวจ และผู้รับผิดชอบงาน
 // บันทึกลง catalog.personnel (unified storage — useAuth อ่านได้ทันที)
 // ============================================================
 import React, { useState } from "react";
@@ -132,7 +132,7 @@ export function PersonnelManager() {
       {/* Personnel List */}
       <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
         <div className="flex items-center justify-between">
-          <SectionTitle icon={Users} title={`รายชื่อบุคลากร (${personnel.length} คน)`} desc="จัดการข้อมูลและรหัสเข้าระบบของแต่ละคน" />
+          <SectionTitle icon={Users} title={`รายชื่อบุคลากร (${personnel.length} คน)`} desc="ทะเบียนรายชื่อผู้ตรวจและผู้รับผิดชอบงาน Facility-Safety (ไม่จัดการบัญชีหรือสิทธิ์เข้าสู่ระบบ)" />
           <button onClick={openNew}
             className="flex items-center gap-1.5 rounded-xl bg-[#F2A900] px-4 py-2.5 text-xs font-bold text-slate-900 shadow-md shadow-amber-200 hover:bg-amber-400 transition">
             <UserPlus className="h-4 w-4" /> เพิ่มบุคลากร
@@ -206,7 +206,7 @@ export function PersonnelManager() {
               ))}
 
               <label className="block">
-                <span className="font-bold text-slate-700">บทบาทในระบบ</span>
+                <span className="font-bold text-slate-700">หน้าที่ในกระบวนงาน</span>
                 <select
                   value={editingPerson.role}
                   onChange={(e) => setEditingPerson({ ...editingPerson, role: e.target.value })}
