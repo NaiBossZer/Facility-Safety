@@ -29,7 +29,7 @@ import { AuditTrailViewer } from "./AuditTrailViewer";
 import { cx } from "../../lib/helpers";
 
 const TABS = [
-  { id: "personnel", name: "บุคลากร", section: "people", icon: Users },
+  { id: "personnel", name: "ทะเบียนบุคลากร", section: "people", icon: Users },
   { id: "catalog", name: "หมวดและรายการตรวจ", section: "master", icon: Layers },
   { id: "asset", name: "ครุภัณฑ์", section: "master", icon: Wrench },
   { id: "vehicle", name: "ยานพาหนะ", section: "master", icon: Car },
@@ -41,7 +41,7 @@ const TABS = [
 ];
 
 const SECTIONS = [
-  { id: "people", name: "บุคลากร", description: "รายชื่อและผู้รับผิดชอบ", icon: Users },
+  { id: "people", name: "บุคลากร", description: "รายชื่อผู้ตรวจและผู้รับผิดชอบงาน", icon: Users },
   { id: "master", name: "ทะเบียนและมาตรฐาน", description: "ข้อมูลกลางที่ระบบใช้ร่วมกัน", icon: Layers },
   { id: "finance", name: "ผู้ขายและงบประมาณ", description: "ข้อมูลสนับสนุนการจัดซื้อ", icon: CircleDollarSign },
   { id: "system", name: "ระบบและตรวจสอบ", description: "ประวัติ การตั้งค่า และสำรองข้อมูล", icon: ShieldCheck },
@@ -66,8 +66,8 @@ export function AdminPage({ onExit }) {
             <ShieldCheck className="h-6 w-6 text-[#F2A900]" />
           </span>
           <div>
-            <h2 className="text-xl font-extrabold text-[#002D62]">ศูนย์จัดการระบบ</h2>
-            <p className="text-xs text-slate-400">รวมข้อมูลบุคลากร ทะเบียนกลาง การเงิน และการตั้งค่าไว้ในที่เดียว</p>
+            <h2 className="text-xl font-extrabold text-[#002D62]">ทะเบียนและตั้งค่า Facility-Safety</h2>
+            <p className="text-xs text-slate-400">จัดการข้อมูลปฏิบัติงานและทะเบียนเฉพาะระบบ ส่วนบัญชีผู้ใช้และสิทธิ์ส่วนกลางจัดการที่ Mahidol Lampang Portal</p>
           </div>
         </div>
         <button onClick={onExit} className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 active:scale-95">
