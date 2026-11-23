@@ -169,7 +169,19 @@ export function Sidebar({ menuOpen, setMenuOpen, currentUser }) {
               </div>
               <button type="button" onClick={() => setMenuOpen(false)} aria-label="ปิดเมนู" className="rounded-lg p-2 text-slate-400 hover:bg-slate-100"><X className="h-5 w-5" /></button>
             </div>
-            <nav className="flex-1 space-y-2 overflow-y-auto">{renderGroups()}</nav>
+            <nav className="flex-1 space-y-2 overflow-y-auto">
+            {renderGroups()}
+            {canManageCentralUsers && (
+              <a href={portalAdminUrl} target="_top" rel="noopener noreferrer" className="mt-2 flex items-center gap-3 rounded-xl border border-[#D6A84F]/40 bg-amber-50 px-3 py-2.5 text-left text-[#123B63] transition hover:bg-amber-100">
+                <Users className="h-4 w-4 shrink-0 text-[#B7791F]" />
+                <span className="min-w-0 flex-1">
+                  <span className="block text-[13px] font-bold">ผู้ใช้งานและสิทธิ์ส่วนกลาง</span>
+                  <span className="block text-[10px] text-slate-500">จัดการผ่าน Mahidol Lampang Portal</span>
+                </span>
+                <ExternalLink className="h-3.5 w-3.5 shrink-0" />
+              </a>
+            )}
+          </nav>
           </div>
         </div>
       )}
