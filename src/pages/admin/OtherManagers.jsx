@@ -12,7 +12,6 @@ import {
   Download,
   Upload,
   RefreshCw,
-  ShieldCheck,
   Save,
   CheckCircle2,
   Edit2,
@@ -22,7 +21,6 @@ import { useAppData } from "../../store/AppDataProvider";
 import { Badge } from "../../components/ui/Badge";
 import { fmt } from "../../lib/helpers";
 import { downloadBackup, readBackupFile, applyBackup } from "../../lib/backup";
-import { fetchAuditLogs } from "../../lib/supabaseData";
 
 // 1. Building Manager
 export function BuildingManager() {
@@ -346,7 +344,6 @@ export function BudgetManager() {
 // 4. Settings Manager (Backup, Restore)
 export function SettingsManager() {
   const { wipeAll, toast } = useAppData();
-  const [exportingAudit, setExportingAudit] = useState(false);
 
   const handleImport = async (e) => {
     const file = e.target.files?.[0];
@@ -365,39 +362,14 @@ export function SettingsManager() {
     }
   };
 
-  const exportAudit = async () => {
-    setExportingAudit(true);
-    try {
-      const logs = await fetchAuditLogs();
-      const blob = new Blob([JSON.stringify({ exportedAt: new Date().toISOString(), logs }, null, 2)], { type: "application/json" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `fsa-audit-log-${new Date().toISOString().slice(0, 10)}.json`;
-      a.click();
-      URL.revokeObjectURL(url);
-      toast.success(`ส่งออก Audit Log ${logs.length} รายการแล้ว`);
-    } catch (error) {
-      toast.error(error.message || "ส่งออก Audit Log ไม่สำเร็จ");
-    } finally {
-      setExportingAudit(false);
-    }
-  };
-
   return (
     <div className="space-y-6">
-      <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm max-w-lg space-y-3">
-        <h3 className="font-extrabold text-slate-800 flex items-center gap-2"><ShieldCheck className="h-4 w-4 text-indigo-600" /> Audit Trail สำหรับ Compliance</h3>
-        <p className="text-xs text-slate-500">บันทึกว่าใครสร้าง แก้ไข หรือลบข้อมูลสำคัญ เมื่อใด โดยอ่านได้เฉพาะผู้มีสิทธิ์จัดการ</p>
-        <button onClick={exportAudit} disabled={exportingAudit} className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-100 disabled:opacity-50">
-          <Download className="h-4 w-4" /> {exportingAudit ? "กำลังเตรียมไฟล์..." : "Export Audit Log (.json)"}
-        </button>
-      </div>
-
-      {/* Backup & Restore */}
-      <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm max-w-lg space-y-4">
-        <h3 className="font-extrabold text-slate-800">สำรองและกู้คืนข้อมูล (Backup & Restore)</h3>
-        <div className="flex gap-2">
+      <div className="max-w-lg space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div>
+          <h3 className="font-extrabold text-slate-800">สำรองและกู้คืนข้อมูล</h3>
+          <p className="mt-1 text-xs text-slate-500">ส่งออกหรือกู้คืนข้อมูลระบบจากไฟล์สำรอง JSON</p>
+        </div>
+        <div className="flex flex-wrap gap-2">
           <button
             onClick={() => {
               downloadBackup();
@@ -405,22 +377,18 @@ export function SettingsManager() {
             }}
             className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-100"
           >
-            <Download className="h-4 w-4" /> Export ข้อมูล (.json)
+            <Download className="h-4 w-4" /> ส่งออกข้อมูลสำรอง
           </button>
-
-          <label className="flex items-center gap-1.5 rounded-xl bg-indigo-600 px-4 py-2.5 text-xs font-bold text-white cursor-pointer hover:bg-indigo-700">
-            <Upload className="h-4 w-4" /> Import ข้อมูล
+          <label className="flex cursor-pointer items-center gap-1.5 rounded-xl bg-indigo-600 px-4 py-2.5 text-xs font-bold text-white hover:bg-indigo-700">
+            <Upload className="h-4 w-4" /> กู้คืนจากไฟล์
             <input type="file" accept=".json" onChange={handleImport} className="hidden" />
           </label>
         </div>
       </div>
 
-      {/* Danger Zone */}
-      <div className="rounded-2xl border border-red-200 bg-red-50/50 p-5 shadow-sm max-w-lg space-y-2">
-        <h3 className="font-extrabold text-red-700">Danger Zone (ล้างข้อมูลระบบ)</h3>
-        <p className="text-xs text-red-600">
-          การล้างข้อมูลจะลบรายการตรวจสอบ ใบแจ้งซ่อม และการตั้งค่าทั้งหมดกลับเป็นค่าเริ่มต้น
-        </p>
+      <div className="max-w-lg space-y-2 rounded-2xl border border-red-200 bg-red-50/50 p-5 shadow-sm">
+        <h3 className="font-extrabold text-red-700">ล้างข้อมูลระบบ</h3>
+        <p className="text-xs text-red-600">การดำเนินการนี้จะลบรายการตรวจสอบ ใบแจ้งซ่อม และการตั้งค่าทั้งหมดกลับเป็นค่าเริ่มต้น</p>
         <button
           onClick={() => {
             if (window.confirm("ยืนยันการล้างข้อมูลทั้งหมดของระบบใช่หรือไม่?")) {
@@ -429,7 +397,7 @@ export function SettingsManager() {
           }}
           className="rounded-xl bg-red-600 px-4 py-2 text-xs font-bold text-white hover:bg-red-700"
         >
-          ล้างข้อมูลทั้งหมด (Reset to Factory)
+          ล้างข้อมูลทั้งหมด
         </button>
       </div>
     </div>
